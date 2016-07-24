@@ -11,13 +11,13 @@ import java.util.*;
 /**
  * Created by krzysztof on 23/07/16.
  */
-public class OrderBookImpl implements OrderBook {
+public class OrderBookSideImpl implements OrderBookSide {
 
     private final Side side;
     private final Map<Pair<Integer, String>, Order> orderIdAndBrokerToOrder;
-    private final SortedSet<Order> orders;
+    private final NavigableSet<Order> orders;
 
-    public OrderBookImpl(final Side side) {
+    public OrderBookSideImpl(final Side side) {
         this.side = side;
 
         if (side == Side.BUY){
@@ -62,15 +62,24 @@ public class OrderBookImpl implements OrderBook {
                     modificationOrder.getNewPrice(),
                     modificationOrder.getTimestamp(),
                     modificationOrder.getNewAmount(),
-                    orderToBeModified.getBroker());
+                    orderToBeModified.getBroker(), "cl-01");
             orders.add(updatedOrder);
             orderIdAndBrokerToOrder.put(orderIdAndBroker, updatedOrder);
         }
     }
 
     @Override
-    public Order getTopOrder() {
-        return orders.first();
+    public Optional<Order> getTopOrder() {
+        if (orders.isEmpty()) {
+            return Optional.empty();
+        } else {
+            return Optional.of(orders.first());
+        }
+    }
+
+    @Override
+    public Order pollTopOrder() {
+        return orders.pollFirst();
     }
 
     private class BuySideComparator implements Comparator<Order> {

@@ -11,19 +11,22 @@ public class Order {
     private int timestamp;
     private int amount;
     private String broker;
+    private String client;
 
     public Order(int orderId,
                  Side side,
                  int price,
                  int timestamp,
                  int amount,
-                 String broker) {
+                 String broker,
+                 String client) {
         this.side = side;
         this.orderId = orderId;
         this.price = price;
         this.timestamp = timestamp;
         this.amount = amount;
         this.broker = broker;
+        this.client = client;
     }
 
     @Override
@@ -38,6 +41,7 @@ public class Order {
         if (price != order.price) return false;
         if (timestamp != order.timestamp) return false;
         if (!broker.equals(order.broker)) return false;
+        if (!client.equals(order.client)) return false;
         if (side != order.side) return false;
 
         return true;
@@ -51,6 +55,7 @@ public class Order {
         result = 31 * result + timestamp;
         result = 31 * result + amount;
         result = 31 * result + broker.hashCode();
+        result = 31 * result + client.hashCode();
         return result;
     }
 
@@ -74,6 +79,14 @@ public class Order {
         return broker;
     }
 
+    public int getAmount() {
+        return amount;
+    }
+
+    public String getClient() {
+        return client;
+    }
+
     @Override
     public String toString() {
         return "Order{" +
@@ -83,6 +96,7 @@ public class Order {
                 ", timestamp=" + timestamp +
                 ", amount=" + amount +
                 ", broker='" + broker + '\'' +
+                ", client='" + client + '\'' +
                 '}';
     }
 }
