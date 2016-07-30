@@ -56,4 +56,15 @@ public class ModificationOrder {
     public int getTimestamp() {
         return timestamp;
     }
+
+    @Override
+    public String toString() {
+        return "ModificationOrder{" +
+                "orderId=" + orderId +
+                ", modifiedOrderId=" + modifiedOrderId +
+                ", broker='" + broker + '\'' +
+                ", orderDetails=" + orderDetails +
+                ", timestamp=" + timestamp +
+                '}';
+    }
 }

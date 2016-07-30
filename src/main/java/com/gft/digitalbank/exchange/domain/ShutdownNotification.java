@@ -28,4 +28,13 @@ public class ShutdownNotification {
     public String getBroker() {
         return broker;
     }
+
+    @Override
+    public String toString() {
+        return "ShutdownNotification{" +
+                "id=" + id +
+                ", timestamp=" + timestamp +
+                ", broker='" + broker + '\'' +
+                '}';
+    }
 }

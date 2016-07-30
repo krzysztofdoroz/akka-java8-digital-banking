@@ -48,12 +48,11 @@ public class Order {
 
         Order order = (Order) o;
 
-//        if (amount != order.amount) return false;
         if (orderId != order.orderId) return false;
-//        if (price != order.price) return false;
         if (timestamp != order.timestamp) return false;
         if (!broker.equals(order.broker)) return false;
         if (!client.equals(order.client)) return false;
+        if (!orderDetails.equals(order.orderDetails)) return false;
         if (!product.equals(order.product)) return false;
         if (side != order.side) return false;
 
@@ -65,11 +64,10 @@ public class Order {
         int result = orderId;
         result = 31 * result + product.hashCode();
         result = 31 * result + side.hashCode();
-//        result = 31 * result + price;
         result = 31 * result + timestamp;
-//        result = 31 * result + amount;
         result = 31 * result + broker.hashCode();
         result = 31 * result + client.hashCode();
+        result = 31 * result + orderDetails.hashCode();
         return result;
     }
 

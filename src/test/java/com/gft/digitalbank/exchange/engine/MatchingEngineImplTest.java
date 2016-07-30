@@ -32,8 +32,7 @@ public class MatchingEngineImplTest {
         // when
 
         // then
-        assertThat(matchingEngine.getOrderBook().getBuyEntries().size(), is(0));
-        assertThat(matchingEngine.getOrderBook().getSellEntries().size(), is(0));
+        assertThat(matchingEngine.getOrderBook().isPresent(), is(false));
         verifyZeroInteractions(transactionRegister);
     }
 
@@ -47,8 +46,8 @@ public class MatchingEngineImplTest {
         matchingEngine.processOrder(order);
 
         // then
-        assertThat(matchingEngine.getOrderBook().getBuyEntries().size(), is(1));
-        assertThat(matchingEngine.getOrderBook().getSellEntries().size(), is(0));
+        assertThat(matchingEngine.getOrderBook().get().getBuyEntries().size(), is(1));
+        assertThat(matchingEngine.getOrderBook().get().getSellEntries().size(), is(0));
         verifyZeroInteractions(transactionRegister);
     }
 
@@ -65,8 +64,7 @@ public class MatchingEngineImplTest {
         matchingEngine.processOrder(sellOrder);
 
         // then
-        assertThat(matchingEngine.getOrderBook().getBuyEntries().size(), is(0));
-        assertThat(matchingEngine.getOrderBook().getSellEntries().size(), is(0));
+        assertThat(matchingEngine.getOrderBook().isPresent(), is(false));
         verify(transactionRegister).register(tx);
     }
 
@@ -84,8 +82,8 @@ public class MatchingEngineImplTest {
         matchingEngine.processOrder(sellOrder);
 
         // then
-        assertThat(matchingEngine.getOrderBook().getBuyEntries(), is(partialBuyOrders));
-        assertThat(matchingEngine.getOrderBook().getSellEntries().size(), is(0));
+        assertThat(matchingEngine.getOrderBook().get().getBuyEntries(), is(partialBuyOrders));
+        assertThat(matchingEngine.getOrderBook().get().getSellEntries().size(), is(0));
         verify(transactionRegister).register(tx);
     }
 
@@ -96,8 +94,8 @@ public class MatchingEngineImplTest {
         Order buyOrder = new Order(1, "A", Side.BUY, 110, 1, 2000, "broker-1", "cl-01");
         Order sellOrder1 = new Order(2, "A", Side.SELL, 100, 2, 1000, "broker-2", "cl-02");
         Order sellOrder2 = new Order(3, "A", Side.SELL, 95, 3, 1000, "broker-2", "cl-02");
-        Transaction tx = new Transaction(1, 1000, 100, "A", "broker-1", "broker-2", "cl-01", "cl-02");
-        Transaction tx2 = new Transaction(2, 1000, 95, "A", "broker-1", "broker-2", "cl-01", "cl-02");
+        Transaction tx = new Transaction(1, 1000, 110, "A", "broker-1", "broker-2", "cl-01", "cl-02");
+        Transaction tx2 = new Transaction(2, 1000, 110, "A", "broker-1", "broker-2", "cl-01", "cl-02");
 
         // when
         matchingEngine.processOrder(sellOrder1);
@@ -105,8 +103,7 @@ public class MatchingEngineImplTest {
         matchingEngine.processOrder(sellOrder2);
 
         // then
-        assertThat(matchingEngine.getOrderBook().getBuyEntries().size(), is(0));
-        assertThat(matchingEngine.getOrderBook().getSellEntries().size(), is(0));
+        assertThat(matchingEngine.getOrderBook().isPresent(), is(false));
         verify(transactionRegister).register(tx);
         verify(transactionRegister).register(tx2);
     }
@@ -121,10 +118,10 @@ public class MatchingEngineImplTest {
         Order sellOrder2 = new Order(3, "A", Side.SELL, 95, 3, 500, "broker-2", "cl-02");
         Order sellOrder3 = new Order(4, "A", Side.SELL, 90, 4, 500, "broker-2", "cl-02");
         Order sellOrder4 = new Order(5, "A", Side.SELL, 105, 5, 500, "broker-2", "cl-02");
-        Transaction tx = new Transaction(1, 500, 100, "A", "broker-1", "broker-2", "cl-01", "cl-02");
-        Transaction tx2 = new Transaction(2, 500, 95, "A", "broker-1", "broker-2", "cl-01", "cl-02");
-        Transaction tx3 = new Transaction(3, 500, 90, "A", "broker-1", "broker-2", "cl-01", "cl-02");
-        Transaction tx4 = new Transaction(4, 500, 105, "A", "broker-1", "broker-2", "cl-01", "cl-02");
+        Transaction tx = new Transaction(1, 500, 110, "A", "broker-1", "broker-2", "cl-01", "cl-02");
+        Transaction tx2 = new Transaction(2, 500, 110, "A", "broker-1", "broker-2", "cl-01", "cl-02");
+        Transaction tx3 = new Transaction(3, 500, 110, "A", "broker-1", "broker-2", "cl-01", "cl-02");
+        Transaction tx4 = new Transaction(4, 500, 110, "A", "broker-1", "broker-2", "cl-01", "cl-02");
 
         // when
         matchingEngine.processOrder(sellOrder1);
@@ -134,8 +131,8 @@ public class MatchingEngineImplTest {
         matchingEngine.processOrder(sellOrder4);
 
         // then
-        assertThat(matchingEngine.getOrderBook().getBuyEntries(), is(partialBuyOrders));
-        assertThat(matchingEngine.getOrderBook().getSellEntries().size(), is(0));
+        assertThat(matchingEngine.getOrderBook().get().getBuyEntries(), is(partialBuyOrders));
+        assertThat(matchingEngine.getOrderBook().get().getSellEntries().size(), is(0));
         verify(transactionRegister).register(tx);
         verify(transactionRegister).register(tx2);
         verify(transactionRegister).register(tx3);

@@ -58,11 +58,13 @@ public class OrderBookSideImpl implements OrderBookSide {
         if (orderToBeModified != null) {
             orders.remove(orderToBeModified);
             Order updatedOrder = new Order(orderToBeModified.getOrderId(),
-                    "A", orderToBeModified.getSide(),
+                    orderToBeModified.getProduct(),
+                    orderToBeModified.getSide(),
                     modificationOrder.getPrice(),
                     modificationOrder.getTimestamp(),
                     modificationOrder.getAmount(),
-                    orderToBeModified.getBroker(), "cl-01");
+                    orderToBeModified.getBroker(),
+                    orderToBeModified.getClient());
             orders.add(updatedOrder);
             orderIdAndBrokerToOrder.put(orderIdAndBroker, updatedOrder);
         }
