@@ -58,10 +58,10 @@ public class OrderBookSideImpl implements OrderBookSide {
         if (orderToBeModified != null) {
             orders.remove(orderToBeModified);
             Order updatedOrder = new Order(orderToBeModified.getOrderId(),
-                    orderToBeModified.getSide(),
-                    modificationOrder.getNewPrice(),
+                    "A", orderToBeModified.getSide(),
+                    modificationOrder.getPrice(),
                     modificationOrder.getTimestamp(),
-                    modificationOrder.getNewAmount(),
+                    modificationOrder.getAmount(),
                     orderToBeModified.getBroker(), "cl-01");
             orders.add(updatedOrder);
             orderIdAndBrokerToOrder.put(orderIdAndBroker, updatedOrder);
@@ -79,6 +79,7 @@ public class OrderBookSideImpl implements OrderBookSide {
 
     @Override
     public Order pollTopOrder() {
+        // TODO: orderIdAndBrokerToOrder should be in consistent state
         return orders.pollFirst();
     }
 

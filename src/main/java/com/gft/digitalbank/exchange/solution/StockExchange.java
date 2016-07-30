@@ -29,7 +29,7 @@ public class StockExchange implements Exchange {
     public void setDestinations(List<String> list) {
 
         try {
-            asyncJMS = new AsyncJMS(list);
+            asyncJMS = new AsyncJMS(list, processingListener);
         } catch (NamingException e) {
             e.printStackTrace();
         } catch (JMSException e) {
@@ -47,11 +47,11 @@ public class StockExchange implements Exchange {
         Set<OrderBook> orderBooks = new HashSet<>();
 
 
-        processingListener.processingDone(
-                SolutionResult.builder()
-                        .transactions(transactions) // transactions is a Set<Transaction>
-                        .orderBooks(orderBooks) // orderBooks is a Set<OrderBook>
-                        .build()
-        );
+//        processingListener.processingDone(
+//                SolutionResult.builder()
+//                        .transactions(transactions) // transactions is a Set<Transaction>
+//                        .orderBooks(orderBooks) // orderBooks is a Set<OrderBook>
+//                        .build()
+//        );
     }
 }

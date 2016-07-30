@@ -1,19 +1,31 @@
 package com.gft.digitalbank.exchange.domain;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 /**
  * Created by krzysztof on 23/07/16.
  */
+
+@JsonIgnoreProperties("messageType")
 public class Order {
 
-    private final int orderId;
-    private final Side side;
-    private int price;
+    @JsonProperty("id")
+    private int orderId;
+    private String product;
+    private Side side;
     private int timestamp;
-    private int amount;
     private String broker;
     private String client;
+    @JsonProperty("details")
+    private OrderDetails orderDetails;
+
+    public Order(){
+        // empty constructor for Jackson
+    }
 
     public Order(int orderId,
+                 String product,
                  Side side,
                  int price,
                  int timestamp,
@@ -22,11 +34,11 @@ public class Order {
                  String client) {
         this.side = side;
         this.orderId = orderId;
-        this.price = price;
+        this.product = product;
         this.timestamp = timestamp;
-        this.amount = amount;
         this.broker = broker;
         this.client = client;
+        this.orderDetails = new OrderDetails(price, amount);
     }
 
     @Override
@@ -36,12 +48,13 @@ public class Order {
 
         Order order = (Order) o;
 
-        if (amount != order.amount) return false;
+//        if (amount != order.amount) return false;
         if (orderId != order.orderId) return false;
-        if (price != order.price) return false;
+//        if (price != order.price) return false;
         if (timestamp != order.timestamp) return false;
         if (!broker.equals(order.broker)) return false;
         if (!client.equals(order.client)) return false;
+        if (!product.equals(order.product)) return false;
         if (side != order.side) return false;
 
         return true;
@@ -50,10 +63,11 @@ public class Order {
     @Override
     public int hashCode() {
         int result = orderId;
+        result = 31 * result + product.hashCode();
         result = 31 * result + side.hashCode();
-        result = 31 * result + price;
+//        result = 31 * result + price;
         result = 31 * result + timestamp;
-        result = 31 * result + amount;
+//        result = 31 * result + amount;
         result = 31 * result + broker.hashCode();
         result = 31 * result + client.hashCode();
         return result;
@@ -68,7 +82,7 @@ public class Order {
     }
 
     public int getPrice() {
-        return price;
+        return orderDetails.getPrice();
     }
 
     public int getTimestamp() {
@@ -80,21 +94,30 @@ public class Order {
     }
 
     public int getAmount() {
-        return amount;
+        return orderDetails.getAmount();
     }
 
     public String getClient() {
         return client;
     }
 
+    public String getProduct() {
+        return product;
+    }
+
+    public OrderDetails getOrderDetails() {
+        return orderDetails;
+    }
+
     @Override
     public String toString() {
         return "Order{" +
                 "orderId=" + orderId +
+                ", product='" + product + '\'' +
                 ", side=" + side +
-                ", price=" + price +
+                ", price=" + orderDetails.getPrice() +
                 ", timestamp=" + timestamp +
-                ", amount=" + amount +
+                ", amount=" + orderDetails.getAmount() +
                 ", broker='" + broker + '\'' +
                 ", client='" + client + '\'' +
                 '}';

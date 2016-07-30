@@ -1,23 +1,31 @@
 package com.gft.digitalbank.exchange.domain;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 /**
  * Created by krzysztof on 23/07/16.
  */
+@JsonIgnoreProperties("messageType")
 public class ModificationOrder {
 
+    @JsonProperty("id")
     private int orderId;
     private int modifiedOrderId;
     private String broker;
-    private int newAmount;
-    private int newPrice;
+    @JsonProperty("details")
+    private OrderDetails orderDetails;
     private int timestamp;
+
+    public ModificationOrder() {
+        // empty constructor for Jackson
+    }
 
     public ModificationOrder(int orderId, int modifiedOrderId, String broker, int newAmount, int newPrice, int timestamp) {
         this.orderId = orderId;
         this.modifiedOrderId = modifiedOrderId;
         this.broker = broker;
-        this.newAmount = newAmount;
-        this.newPrice = newPrice;
+        this.orderDetails = new OrderDetails(newPrice, newAmount);
         this.timestamp = timestamp;
     }
 
@@ -33,12 +41,16 @@ public class ModificationOrder {
         return broker;
     }
 
-    public int getNewAmount() {
-        return newAmount;
+    public OrderDetails getOrderDetails() {
+        return orderDetails;
     }
 
-    public int getNewPrice() {
-        return newPrice;
+    public int getPrice() {
+        return orderDetails.getPrice();
+    }
+
+    public int getAmount() {
+        return orderDetails.getAmount();
     }
 
     public int getTimestamp() {

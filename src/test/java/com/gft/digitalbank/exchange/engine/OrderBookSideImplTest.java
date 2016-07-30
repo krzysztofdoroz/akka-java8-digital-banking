@@ -28,7 +28,7 @@ public class OrderBookSideImplTest {
         orderBookSide = new OrderBookSideImpl(Side.BUY);
 
         // when
-        orderBookSide.addOrder(new Order(1, Side.BUY, 100, 1, 1000, "broker-1", "cl-01"));
+        orderBookSide.addOrder(new Order(1, "A", Side.BUY, 100, 1, 1000, "broker-1", "cl-01"));
 
         // then
         assertEquals(1, orderBookSide.getOrders().size());
@@ -40,7 +40,7 @@ public class OrderBookSideImplTest {
         orderBookSide = new OrderBookSideImpl(Side.SELL);
 
         // when
-        orderBookSide.addOrder(new Order(1, Side.SELL, 100, 1, 1000, "broker-1", "cl-01"));
+        orderBookSide.addOrder(new Order(1, "A", Side.SELL, 100, 1, 1000, "broker-1", "cl-01"));
 
         // then
         assertEquals(1, orderBookSide.getOrders().size());
@@ -52,9 +52,9 @@ public class OrderBookSideImplTest {
         // given
         orderBookSide = new OrderBookSideImpl(Side.BUY);
 
-        Order order1 = new Order(1, Side.BUY, 110, 1, 1000, "broker-1", "cl-01");
-        Order order2 = new Order(2, Side.BUY, 200, 2, 1000, "broker-1", "cl-01");
-        Order order3 = new Order(3, Side.BUY, 190, 3, 1000, "broker-1", "cl-01");
+        Order order1 = new Order(1, "A", Side.BUY, 110, 1, 1000, "broker-1", "cl-01");
+        Order order2 = new Order(2, "A", Side.BUY, 200, 2, 1000, "broker-1", "cl-01");
+        Order order3 = new Order(3, "A", Side.BUY, 190, 3, 1000, "broker-1", "cl-01");
         List<Order> sortedOrders = Arrays.asList(order2, order3, order1);
 
         // when
@@ -71,9 +71,9 @@ public class OrderBookSideImplTest {
         // given
         orderBookSide = new OrderBookSideImpl(Side.SELL);
 
-        Order order1 = new Order(1, Side.SELL, 110, 1, 1000, "broker-1", "cl-01");
-        Order order2 = new Order(2, Side.SELL, 200, 2, 1000, "broker-1", "cl-01");
-        Order order3 = new Order(3, Side.SELL, 190, 3, 1000, "broker-1", "cl-01");
+        Order order1 = new Order(1, "A", Side.SELL, 110, 1, 1000, "broker-1", "cl-01");
+        Order order2 = new Order(2, "A", Side.SELL, 200, 2, 1000, "broker-1", "cl-01");
+        Order order3 = new Order(3, "A", Side.SELL, 190, 3, 1000, "broker-1", "cl-01");
         List<Order> sortedOrders = Arrays.asList(order1, order3, order2);
 
         // when
@@ -90,9 +90,9 @@ public class OrderBookSideImplTest {
         // given
         orderBookSide = new OrderBookSideImpl(Side.BUY);
 
-        Order order1 = new Order(1, Side.BUY, 210, 11, 1000, "broker-1", "cl-01");
-        Order order2 = new Order(2, Side.BUY, 210, 22, 1000, "broker-1", "cl-01");
-        Order order3 = new Order(3, Side.BUY, 210, 3, 1000,"broker-1", "cl-01");
+        Order order1 = new Order(1, "A", Side.BUY, 210, 11, 1000, "broker-1", "cl-01");
+        Order order2 = new Order(2, "A", Side.BUY, 210, 22, 1000, "broker-1", "cl-01");
+        Order order3 = new Order(3, "A", Side.BUY, 210, 3, 1000,"broker-1", "cl-01");
         List<Order> sortedOrders = Arrays.asList(order3, order1, order2);
 
         // when
@@ -109,9 +109,9 @@ public class OrderBookSideImplTest {
         // given
         orderBookSide = new OrderBookSideImpl(Side.SELL);
 
-        Order order1 = new Order(1, Side.SELL, 210, 11, 1000, "broker-1", "cl-01");
-        Order order2 = new Order(2, Side.SELL, 210, 22, 1000, "broker-1", "cl-01");
-        Order order3 = new Order(3, Side.SELL, 210, 3, 1000,"broker-1", "cl-01");
+        Order order1 = new Order(1, "A", Side.SELL, 210, 11, 1000, "broker-1", "cl-01");
+        Order order2 = new Order(2, "A", Side.SELL, 210, 22, 1000, "broker-1", "cl-01");
+        Order order3 = new Order(3, "A", Side.SELL, 210, 3, 1000,"broker-1", "cl-01");
         List<Order> sortedOrders = Arrays.asList(order3, order1, order2);
 
         // when
@@ -128,9 +128,9 @@ public class OrderBookSideImplTest {
         // given
         orderBookSide = new OrderBookSideImpl(Side.BUY);
         CancellationOrder cancellationOrder = new CancellationOrder(2, "broker-1", 2);
-        Order order1 = new Order(1, Side.BUY, 110, 1, 1000, "broker-1", "cl-01");
-        Order order2 = new Order(2, Side.BUY, 200, 2, 1000, "broker-1", "cl-01");
-        Order order3 = new Order(3, Side.BUY, 190, 3, 1000, "broker-1", "cl-01");
+        Order order1 = new Order(1, "A", Side.BUY, 110, 1, 1000, "broker-1", "cl-01");
+        Order order2 = new Order(2, "A", Side.BUY, 200, 2, 1000, "broker-1", "cl-01");
+        Order order3 = new Order(3, "A", Side.BUY, 190, 3, 1000, "broker-1", "cl-01");
         List<Order> expectedOrders = Arrays.asList(order3, order1);
 
         // when
@@ -148,9 +148,9 @@ public class OrderBookSideImplTest {
         // given
         orderBookSide = new OrderBookSideImpl(Side.SELL);
         CancellationOrder cancellationOrder = new CancellationOrder(2, "broker-1", 2);
-        Order order1 = new Order(1, Side.SELL, 110, 1, 1000, "broker-1", "cl-01");
-        Order order2 = new Order(2, Side.SELL, 200, 2, 1000, "broker-1", "cl-01");
-        Order order3 = new Order(3, Side.SELL, 190, 3, 1000, "broker-1", "cl-01");
+        Order order1 = new Order(1, "A", Side.SELL, 110, 1, 1000, "broker-1", "cl-01");
+        Order order2 = new Order(2, "A", Side.SELL, 200, 2, 1000, "broker-1", "cl-01");
+        Order order3 = new Order(3, "A", Side.SELL, 190, 3, 1000, "broker-1", "cl-01");
         List<Order> expectedOrders = Arrays.asList(order1, order3);
 
         // when
@@ -170,9 +170,9 @@ public class OrderBookSideImplTest {
         orderBookSide = new OrderBookSideImpl(Side.BUY);
         CancellationOrder cancellationOrder2 = new CancellationOrder(2, "broker-1", 2);
         CancellationOrder cancellationOrder3 = new CancellationOrder(3, "broker-1", 3);
-        Order order1 = new Order(1, Side.BUY, 110, 1, 1000, "broker-1", "cl-01");
-        Order order2 = new Order(2, Side.BUY, 200, 2, 1000, "broker-1", "cl-01");
-        Order order3 = new Order(3, Side.BUY, 190, 3, 1000, "broker-1", "cl-01");
+        Order order1 = new Order(1, "A", Side.BUY, 110, 1, 1000, "broker-1", "cl-01");
+        Order order2 = new Order(2, "A", Side.BUY, 200, 2, 1000, "broker-1", "cl-01");
+        Order order3 = new Order(3, "A", Side.BUY, 190, 3, 1000, "broker-1", "cl-01");
         List<Order> expectedOrders = Arrays.asList(order1);
 
         // when
@@ -192,9 +192,9 @@ public class OrderBookSideImplTest {
         orderBookSide = new OrderBookSideImpl(Side.SELL);
         CancellationOrder cancellationOrder2 = new CancellationOrder(2, "broker-1", 2);
         CancellationOrder cancellationOrder3 = new CancellationOrder(3, "broker-1", 3);
-        Order order1 = new Order(1, Side.SELL, 110, 1, 1000, "broker-1", "cl-01");
-        Order order2 = new Order(2, Side.SELL, 200, 2, 1000, "broker-1", "cl-01");
-        Order order3 = new Order(3, Side.SELL, 190, 3, 1000, "broker-1", "cl-01");
+        Order order1 = new Order(1, "A", Side.SELL, 110, 1, 1000, "broker-1", "cl-01");
+        Order order2 = new Order(2, "A", Side.SELL, 200, 2, 1000, "broker-1", "cl-01");
+        Order order3 = new Order(3, "A", Side.SELL, 190, 3, 1000, "broker-1", "cl-01");
         List<Order> expectedOrders = Arrays.asList(order1);
 
         // when
@@ -227,10 +227,10 @@ public class OrderBookSideImplTest {
         // given
         orderBookSide = new OrderBookSideImpl(Side.BUY);
         ModificationOrder modificationOrder = new ModificationOrder(4, 3, "broker-1", 120, 290, 4);
-        Order order1 = new Order(1, Side.BUY, 110, 1, 1000, "broker-1", "cl-01");
-        Order order2 = new Order(2, Side.BUY, 200, 2, 1000, "broker-1", "cl-01");
-        Order order3 = new Order(3, Side.BUY, 190, 3, 1000, "broker-1", "cl-01");
-        Order order3AfterModification = new Order(3, Side.BUY, 290, 4, 120, "broker-1", "cl-01");
+        Order order1 = new Order(1, "A", Side.BUY, 110, 1, 1000, "broker-1", "cl-01");
+        Order order2 = new Order(2, "A", Side.BUY, 200, 2, 1000, "broker-1", "cl-01");
+        Order order3 = new Order(3, "A", Side.BUY, 190, 3, 1000, "broker-1", "cl-01");
+        Order order3AfterModification = new Order(3, "A", Side.BUY, 290, 4, 120, "broker-1", "cl-01");
 
         List<Order> expectedOrders = Arrays.asList(order3AfterModification, order2, order1);
 
@@ -249,10 +249,10 @@ public class OrderBookSideImplTest {
         // given
         orderBookSide = new OrderBookSideImpl(Side.SELL);
         ModificationOrder modificationOrder = new ModificationOrder(4, 3, "broker-1", 120, 290, 4);
-        Order order1 = new Order(1, Side.SELL, 110, 1, 1000, "broker-1", "cl-01");
-        Order order2 = new Order(2, Side.SELL, 200, 2, 1000, "broker-1", "cl-01");
-        Order order3 = new Order(3, Side.SELL, 190, 3, 1000, "broker-1", "cl-01");
-        Order order3AfterModification = new Order(3, Side.SELL, 290, 4, 120, "broker-1", "cl-01");
+        Order order1 = new Order(1, "A", Side.SELL, 110, 1, 1000, "broker-1", "cl-01");
+        Order order2 = new Order(2, "A", Side.SELL, 200, 2, 1000, "broker-1", "cl-01");
+        Order order3 = new Order(3, "A", Side.SELL, 190, 3, 1000, "broker-1", "cl-01");
+        Order order3AfterModification = new Order(3, "A", Side.SELL, 290, 4, 120, "broker-1", "cl-01");
 
         List<Order> expectedOrders = Arrays.asList(order1, order2, order3AfterModification);
 
@@ -270,9 +270,9 @@ public class OrderBookSideImplTest {
     public void testGettingTopSellOrder() {
         // given
         orderBookSide = new OrderBookSideImpl(Side.SELL);
-        Order order1 = new Order(1, Side.SELL, 110, 1, 1000, "broker-1", "cl-01");
-        Order order2 = new Order(2, Side.SELL, 200, 2, 1000, "broker-1", "cl-01");
-        Order order3 = new Order(3, Side.SELL, 190, 3, 1000, "broker-1", "cl-01");
+        Order order1 = new Order(1, "A", Side.SELL, 110, 1, 1000, "broker-1", "cl-01");
+        Order order2 = new Order(2, "A", Side.SELL, 200, 2, 1000, "broker-1", "cl-01");
+        Order order3 = new Order(3, "A", Side.SELL, 190, 3, 1000, "broker-1", "cl-01");
 
         // when
         orderBookSide.addOrder(order1);
@@ -287,9 +287,9 @@ public class OrderBookSideImplTest {
     public void testGettingTopBuyOrder() {
         // given
         orderBookSide = new OrderBookSideImpl(Side.BUY);
-        Order order1 = new Order(1, Side.BUY, 110, 1, 1000, "broker-1", "cl-01");
-        Order order2 = new Order(2, Side.BUY, 200, 2, 1000, "broker-1", "cl-01");
-        Order order3 = new Order(3, Side.BUY, 190, 3, 1000, "broker-1", "cl-01");
+        Order order1 = new Order(1, "A", Side.BUY, 110, 1, 1000, "broker-1", "cl-01");
+        Order order2 = new Order(2, "A", Side.BUY, 200, 2, 1000, "broker-1", "cl-01");
+        Order order3 = new Order(3, "A", Side.BUY, 190, 3, 1000, "broker-1", "cl-01");
 
         // when
         orderBookSide.addOrder(order1);

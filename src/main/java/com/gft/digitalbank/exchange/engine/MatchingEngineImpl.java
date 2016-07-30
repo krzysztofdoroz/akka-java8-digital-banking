@@ -15,7 +15,7 @@ import java.util.stream.Collectors;
 /**
  * Created by krzysztof on 23/07/16.
  */
-public class TransactionEngineImpl implements TransactionEngine {
+public class MatchingEngineImpl implements MatchingEngine {
 
     private final String product;
     private final OrderBookSide buySideOrderBook;
@@ -23,7 +23,7 @@ public class TransactionEngineImpl implements TransactionEngine {
     private final TransactionRegister transactionRegister;
     private int transactionId = 1;
 
-    public TransactionEngineImpl(String product, TransactionRegister transactionRegister) {
+    public MatchingEngineImpl(String product, TransactionRegister transactionRegister) {
         this.product = product;
         this.buySideOrderBook = new OrderBookSideImpl(Side.BUY);
         this.sellSideOrderBook = new OrderBookSideImpl(Side.SELL);
@@ -95,12 +95,12 @@ public class TransactionEngineImpl implements TransactionEngine {
 
                     if (txAmount < buySide.getAmount()) {
                         // partial order
-                        buySideOrderBook.addOrder(new Order(buySide.getOrderId(), buySide.getSide(), buySide.getPrice(),
+                        buySideOrderBook.addOrder(new Order(buySide.getOrderId(), "A", buySide.getSide(), buySide.getPrice(),
                                 buySide.getTimestamp(), buySide.getAmount() - txAmount, buySide.getBroker(), buySide.getClient()));
                     }
                     if (txAmount < sellSide.getAmount()) {
                         // partial order
-                        sellSideOrderBook.addOrder(new Order(buySide.getOrderId(), buySide.getSide(), buySide.getPrice(),
+                        sellSideOrderBook.addOrder(new Order(buySide.getOrderId(), "A", buySide.getSide(), buySide.getPrice(),
                                 buySide.getTimestamp(), buySide.getAmount() - txAmount, buySide.getBroker(), buySide.getClient()));
                     }
 
