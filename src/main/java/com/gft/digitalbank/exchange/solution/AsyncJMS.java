@@ -14,16 +14,14 @@ import com.gft.digitalbank.exchange.engine.TransactionRegisterImpl;
 import com.gft.digitalbank.exchange.listener.ProcessingListener;
 import com.gft.digitalbank.exchange.model.OrderBook;
 import com.gft.digitalbank.exchange.model.SolutionResult;
+import com.gft.digitalbank.exchange.model.Transaction;
 
 import javax.jms.*;
 import javax.naming.Context;
 import javax.naming.InitialContext;
 import javax.naming.NamingException;
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -40,6 +38,8 @@ public class AsyncJMS {
     private final List<String> dests;
     private final ProcessingListener processingListener;
     private AtomicInteger activeBrokers;
+    private Map<String, MatchingEngine> productToEngine = new HashMap<>();
+    TransactionRegister transactionRegister = new TransactionRegisterImpl();
 
     public AsyncJMS(final List<String> dests, final ProcessingListener processingListener) throws NamingException, JMSException {
         this.dests = dests;
@@ -49,8 +49,6 @@ public class AsyncJMS {
         Context context = new InitialContext();
         ConnectionFactory connectionFactory = (ConnectionFactory) context.lookup("ConnectionFactory");
 
-        TransactionRegister transactionRegister = new TransactionRegisterImpl();
-        MatchingEngine matchingEngine = new MatchingEngineImpl("A", transactionRegister);
 
         // Create a Connection
         Connection connection = connectionFactory.createConnection();
@@ -77,20 +75,33 @@ public class AsyncJMS {
                         switch (type) {
                             case ORDER:
                                 Order order = mapper.readValue(payload, Order.class);
-                                System.out.println("ORDER:" + order);
+                                String product = order.getProduct();
 
-                                matchingEngine.processOrder(order);
+                                if(!productToEngine.containsKey(order.getProduct())) {
+
+                                    MatchingEngine matchingEngine = new MatchingEngineImpl(product, transactionRegister);
+
+                                    productToEngine.put(product, matchingEngine);
+                                }
+
+                                productToEngine.get(order.getProduct()).processOrder(order);
+                                //System.out.println("ORDER:" + order);
 
                                 break;
                             case CANCEL:
                                 CancellationOrder cancellationOrder = mapper.readValue(payload, CancellationOrder.class);
-                                matchingEngine.cancelOrder(cancellationOrder);
-                                   System.out.println("CANCEL:" + cancellationOrder);
+
+                                for (MatchingEngine engine : productToEngine.values()) {
+                                     engine.cancelOrder(cancellationOrder);
+                                }
+                                System.out.println("CANCEL:" + cancellationOrder);
                                 break;
                             case MODIFICATION:
                                 ModificationOrder modificationOrder = mapper.readValue(payload, ModificationOrder.class);
                                 System.out.println("MODIFICATION:" + modificationOrder);
-                                matchingEngine.modifyOrder(modificationOrder);
+                                for (MatchingEngine engine : productToEngine.values()) {
+                                    engine.modifyOrder(modificationOrder);
+                                }
                                 break;
                             case SHUTDOWN_NOTIFICATION:
                                 ShutdownNotification shutdownNotification = mapper.readValue(payload, ShutdownNotification.class);
@@ -104,10 +115,14 @@ public class AsyncJMS {
                                 // kill connection for this broker
                                 if (activeBrokers.get() == 0) {
                                     Set<OrderBook> orderBooks = new HashSet<OrderBook>();
+                                    Set<Transaction> transactions = new HashSet<Transaction>();
 
-                                    if(matchingEngine.getOrderBook().isPresent()) {
-                                        orderBooks.add(matchingEngine.getOrderBook().get());
+                                    for (MatchingEngine engine : productToEngine.values()){
+                                        if(engine.getOrderBook().isPresent()) {
+                                            orderBooks.add(engine.getOrderBook().get());
+                                        }
                                     }
+
 
                                     processingListener.processingDone(
                                             SolutionResult.builder()

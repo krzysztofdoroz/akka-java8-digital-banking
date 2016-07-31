@@ -56,6 +56,7 @@ public class MatchingEngineImpl implements MatchingEngine {
         // TODO: add map to route mod order to correct side
         buySideOrderBook.modifyOrder(modificationOrder);
         sellSideOrderBook.modifyOrder(modificationOrder);
+        tryMatching();
     }
 
     @Override
