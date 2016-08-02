@@ -1,10 +1,12 @@
 package com.gft.digitalbank.exchange.engine;
 
+import com.gft.digitalbank.exchange.domain.ModificationOrder;
 import com.gft.digitalbank.exchange.domain.Order;
 import com.gft.digitalbank.exchange.domain.Side;
 import com.gft.digitalbank.exchange.model.OrderEntry;
 import com.gft.digitalbank.exchange.model.Transaction;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.Arrays;
@@ -60,6 +62,25 @@ public class MatchingEngineImplTest {
         Transaction tx = new Transaction(1, 1000, 110, "A", "broker-1", "broker-2", "cl-01", "cl-02");
 
         // when
+        matchingEngine.processOrder(buyOrder);
+        matchingEngine.processOrder(sellOrder);
+
+        // then
+        assertThat(matchingEngine.getOrderBook().isPresent(), is(false));
+        verify(transactionRegister).register(tx);
+    }
+
+    @Ignore
+    public void testOneBuyOneSellOrderOneModificationOneTransactionReverseOrder() {
+        // given
+        matchingEngine = new MatchingEngineImpl("A", transactionRegister);
+        Order buyOrder = new Order(1, "A", Side.BUY, 110, 1, 1000, "broker-1", "cl-01");
+        ModificationOrder modificationOrder = new ModificationOrder(2, 1, "broker-1", 1000, 115, 2);
+        Order sellOrder = new Order(3, "A", Side.SELL, 110, 3, 1000, "broker-2", "cl-02");
+        Transaction tx = new Transaction(1, 1000, 115, "A", "broker-1", "broker-2", "cl-01", "cl-02");
+
+        // when
+        matchingEngine.modifyOrder(modificationOrder);
         matchingEngine.processOrder(buyOrder);
         matchingEngine.processOrder(sellOrder);
 
@@ -129,6 +150,38 @@ public class MatchingEngineImplTest {
         matchingEngine.processOrder(sellOrder2);
         matchingEngine.processOrder(sellOrder3);
         matchingEngine.processOrder(sellOrder4);
+
+        // then
+        assertThat(matchingEngine.getOrderBook().get().getBuyEntries(), is(partialBuyOrders));
+        assertThat(matchingEngine.getOrderBook().get().getSellEntries().size(), is(0));
+        verify(transactionRegister).register(tx);
+        verify(transactionRegister).register(tx2);
+        verify(transactionRegister).register(tx3);
+        verify(transactionRegister).register(tx4);
+        verifyNoMoreInteractions(transactionRegister);
+    }
+
+    @Test
+    public void testOnePartialBuyOrderFourSellOrdersFourTransactionsInReverseOrder() {
+        // given
+        matchingEngine = new MatchingEngineImpl("A", transactionRegister);
+        Order buyOrder = new Order(1, "A", Side.BUY, 110, 1, 2500, "broker-1", "cl-01");
+        List<OrderEntry> partialBuyOrders = Arrays.asList(new OrderEntry(1, "broker-1", 500, 110, "cl-01"));
+        Order sellOrder1 = new Order(2, "A", Side.SELL, 100, 2, 500, "broker-2", "cl-02");
+        Order sellOrder2 = new Order(3, "A", Side.SELL, 95, 3, 500, "broker-2", "cl-02");
+        Order sellOrder3 = new Order(4, "A", Side.SELL, 90, 4, 500, "broker-2", "cl-02");
+        Order sellOrder4 = new Order(5, "A", Side.SELL, 105, 5, 500, "broker-2", "cl-02");
+        Transaction tx = new Transaction(1, 500, 110, "A", "broker-1", "broker-2", "cl-01", "cl-02");
+        Transaction tx2 = new Transaction(2, 500, 110, "A", "broker-1", "broker-2", "cl-01", "cl-02");
+        Transaction tx3 = new Transaction(3, 500, 110, "A", "broker-1", "broker-2", "cl-01", "cl-02");
+        Transaction tx4 = new Transaction(4, 500, 110, "A", "broker-1", "broker-2", "cl-01", "cl-02");
+
+        // when
+        matchingEngine.processOrder(sellOrder4);
+        matchingEngine.processOrder(sellOrder3);
+        matchingEngine.processOrder(sellOrder2);
+        matchingEngine.processOrder(sellOrder1);
+        matchingEngine.processOrder(buyOrder);
 
         // then
         assertThat(matchingEngine.getOrderBook().get().getBuyEntries(), is(partialBuyOrders));

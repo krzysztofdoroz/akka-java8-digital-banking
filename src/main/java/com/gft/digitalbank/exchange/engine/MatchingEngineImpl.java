@@ -1,17 +1,11 @@
 package com.gft.digitalbank.exchange.engine;
 
-import com.gft.digitalbank.exchange.domain.CancellationOrder;
-import com.gft.digitalbank.exchange.domain.ModificationOrder;
-import com.gft.digitalbank.exchange.domain.Order;
-import com.gft.digitalbank.exchange.domain.Side;
+import com.gft.digitalbank.exchange.domain.*;
 import com.gft.digitalbank.exchange.model.OrderBook;
 import com.gft.digitalbank.exchange.model.OrderEntry;
 import com.gft.digitalbank.exchange.model.Transaction;
 
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Optional;
-import java.util.stream.Collectors;
+import java.util.*;
 
 /**
  * Created by krzysztof on 23/07/16.
@@ -23,6 +17,15 @@ public class MatchingEngineImpl implements MatchingEngine {
     private final OrderBookSide sellSideOrderBook;
     private final TransactionRegister transactionRegister;
     private int transactionId = 1;
+//    private int nextOrderId = 1;
+
+
+    public MatchingEngineImpl(String product) {
+        this.product = product;
+        this.buySideOrderBook = new OrderBookSideImpl(Side.BUY);
+        this.sellSideOrderBook = new OrderBookSideImpl(Side.SELL);
+        this.transactionRegister = new TransactionRegisterImpl();
+    }
 
     public MatchingEngineImpl(String product, TransactionRegister transactionRegister) {
         this.product = product;
@@ -33,6 +36,34 @@ public class MatchingEngineImpl implements MatchingEngine {
 
     @Override
     public void processOrder(Order order) {
+        //   if (order.getOrderId() == nextOrderId) {
+
+        addOrder(order);
+//            boolean continueMatching = true;
+//
+//            // find next orders from pending orders
+//            while (continueMatching) {
+//
+//                if (!pendingOrders.isEmpty() && pendingOrders.first().getOrderId() == nextOrderId) {
+//                    addOrder(pendingOrders.pollFirst());
+//
+//                } else if (!pendingModificationOrders.isEmpty() && pendingModificationOrders.first().getOrderId() == nextOrderId) {
+//                    modifyOrder(pendingModificationOrders.pollFirst());
+//                } else {
+//                    continueMatching = false;
+//                }
+//
+//            }
+
+        //   tryMatching();
+//        } else {
+//            pendingOrders.add(order);
+//        }
+
+    }
+
+    private void addOrder(final Order order) {
+        //  nextOrderId++;
         switch (order.getSide()) {
             case BUY:
                 buySideOrderBook.addOrder(order);
@@ -41,22 +72,49 @@ public class MatchingEngineImpl implements MatchingEngine {
                 sellSideOrderBook.addOrder(order);
                 break;
         }
-
         tryMatching();
     }
 
     @Override
-    public void cancelOrder(CancellationOrder cancellationOrder) {
-        buySideOrderBook.cancelOrder(cancellationOrder);
-        sellSideOrderBook.cancelOrder(cancellationOrder);
+    public boolean cancelOrder(CancellationOrder cancellationOrder) {
+        return
+                buySideOrderBook.cancelOrder(cancellationOrder) ||
+                        sellSideOrderBook.cancelOrder(cancellationOrder);
     }
 
     @Override
-    public void modifyOrder(ModificationOrder modificationOrder) {
+    public boolean modifyOrder(final ModificationOrder modificationOrder) {
         // TODO: add map to route mod order to correct side
-        buySideOrderBook.modifyOrder(modificationOrder);
-        sellSideOrderBook.modifyOrder(modificationOrder);
-        tryMatching();
+        // if (nextOrderId == modificationOrder.getOrderId()) {
+        boolean modified = buySideOrderBook.modifyOrder(modificationOrder) || sellSideOrderBook.modifyOrder(modificationOrder);
+
+        //    nextOrderId++;
+
+//            boolean continueMatching = true;
+//
+//            // find next orders from pending orders
+//            while (continueMatching) {
+//
+//                if (!pendingOrders.isEmpty() && pendingOrders.first().getOrderId() == nextOrderId) {
+//                    addOrder(pendingOrders.pollFirst());
+//
+//                } else if (!pendingModificationOrders.isEmpty() && pendingModificationOrders.first().getOrderId() == nextOrderId) {
+//                    modifyOrder(pendingModificationOrders.pollFirst());
+//                    tryMatching();
+//                } else {
+//                    continueMatching = false;
+//                }
+//
+//            }
+        if (modified) {
+            tryMatching();
+        }
+
+        return modified;
+//        } else {
+//            pendingModificationOrders.add(modificationOrder);
+//        }
+
     }
 
     @Override
@@ -72,11 +130,16 @@ public class MatchingEngineImpl implements MatchingEngine {
         }
     }
 
+    @Override
+    public Set<Transaction> getTransactions() {
+        return transactionRegister.getTransactions();
+    }
+
     private void tryMatching() {
 
         boolean stillMatching = true;
 
-        while(stillMatching) {
+        while (stillMatching) {
             // get orders from both sides
             Optional<Order> buySideOrder = buySideOrderBook.getTopOrder();
             Optional<Order> sellSideOrder = sellSideOrderBook.getTopOrder();
@@ -90,7 +153,7 @@ public class MatchingEngineImpl implements MatchingEngine {
                     Order sellSide = sellSideOrderBook.pollTopOrder();
 
                     int txPrice;
-                    if (buySide.getTimestamp() > sellSide.getTimestamp())  {
+                    if (buySide.getTimestamp() > sellSide.getTimestamp()) {
                         txPrice = sellSide.getPrice();
                     } else {
                         txPrice = buySide.getPrice();
@@ -125,7 +188,7 @@ public class MatchingEngineImpl implements MatchingEngine {
         int index = 1;
         List<OrderEntry> entries = new LinkedList<>();
 
-        for(Order ord : orders) {
+        for (Order ord : orders) {
             entries.add(new OrderEntry(index++, ord.getBroker(), ord.getAmount(), ord.getPrice(), ord.getClient()));
         }
 

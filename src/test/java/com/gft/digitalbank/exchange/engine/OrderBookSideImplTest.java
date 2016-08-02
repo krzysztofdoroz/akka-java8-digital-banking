@@ -127,7 +127,7 @@ public class OrderBookSideImplTest {
     public void testCancellingSingleBuyOrder() {
         // given
         orderBookSide = new OrderBookSideImpl(Side.BUY);
-        CancellationOrder cancellationOrder = new CancellationOrder(2, "broker-1", 2);
+        CancellationOrder cancellationOrder = new CancellationOrder(4, 2, "broker-1", 2);
         Order order1 = new Order(1, "A", Side.BUY, 110, 1, 1000, "broker-1", "cl-01");
         Order order2 = new Order(2, "A", Side.BUY, 200, 2, 1000, "broker-1", "cl-01");
         Order order3 = new Order(3, "A", Side.BUY, 190, 3, 1000, "broker-1", "cl-01");
@@ -147,7 +147,7 @@ public class OrderBookSideImplTest {
     public void testCancellingSingleSellOrder() {
         // given
         orderBookSide = new OrderBookSideImpl(Side.SELL);
-        CancellationOrder cancellationOrder = new CancellationOrder(2, "broker-1", 2);
+        CancellationOrder cancellationOrder = new CancellationOrder(4, 2, "broker-1", 2);
         Order order1 = new Order(1, "A", Side.SELL, 110, 1, 1000, "broker-1", "cl-01");
         Order order2 = new Order(2, "A", Side.SELL, 200, 2, 1000, "broker-1", "cl-01");
         Order order3 = new Order(3, "A", Side.SELL, 190, 3, 1000, "broker-1", "cl-01");
@@ -168,8 +168,8 @@ public class OrderBookSideImplTest {
     public void testCancellingMultipleBuyOrders() {
         // given
         orderBookSide = new OrderBookSideImpl(Side.BUY);
-        CancellationOrder cancellationOrder2 = new CancellationOrder(2, "broker-1", 2);
-        CancellationOrder cancellationOrder3 = new CancellationOrder(3, "broker-1", 3);
+        CancellationOrder cancellationOrder2 = new CancellationOrder(4, 2, "broker-1", 2);
+        CancellationOrder cancellationOrder3 = new CancellationOrder(5, 3, "broker-1", 3);
         Order order1 = new Order(1, "A", Side.BUY, 110, 1, 1000, "broker-1", "cl-01");
         Order order2 = new Order(2, "A", Side.BUY, 200, 2, 1000, "broker-1", "cl-01");
         Order order3 = new Order(3, "A", Side.BUY, 190, 3, 1000, "broker-1", "cl-01");
@@ -190,8 +190,8 @@ public class OrderBookSideImplTest {
     public void testCancellingMultipleSellOrders() {
         // given
         orderBookSide = new OrderBookSideImpl(Side.SELL);
-        CancellationOrder cancellationOrder2 = new CancellationOrder(2, "broker-1", 2);
-        CancellationOrder cancellationOrder3 = new CancellationOrder(3, "broker-1", 3);
+        CancellationOrder cancellationOrder2 = new CancellationOrder(4, 2, "broker-1", 2);
+        CancellationOrder cancellationOrder3 = new CancellationOrder(5, 3, "broker-1", 3);
         Order order1 = new Order(1, "A", Side.SELL, 110, 1, 1000, "broker-1", "cl-01");
         Order order2 = new Order(2, "A", Side.SELL, 200, 2, 1000, "broker-1", "cl-01");
         Order order3 = new Order(3, "A", Side.SELL, 190, 3, 1000, "broker-1", "cl-01");
@@ -213,7 +213,7 @@ public class OrderBookSideImplTest {
     public void testCancellingNonExistingOrder() {
         // given
         orderBookSide = new OrderBookSideImpl(Side.BUY);
-        CancellationOrder cancellationOrder = new CancellationOrder(4, "broker-1", 4);
+        CancellationOrder cancellationOrder = new CancellationOrder(1, 4, "broker-1", 4);
 
         // when
         orderBookSide.cancelOrder(cancellationOrder);

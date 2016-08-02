@@ -40,18 +40,22 @@ public class OrderBookSideImpl implements OrderBookSide {
     }
 
     @Override
-    public void cancelOrder(CancellationOrder cancellationOrder) {
+    public boolean cancelOrder(CancellationOrder cancellationOrder) {
+        boolean cancelled = false;
         Pair<Integer, String> orderIdAndBroker = Pair.of(cancellationOrder.getCancelledOrderId(),
                                                          cancellationOrder.getBroker());
         Order orderToBeCancelled = orderIdAndBrokerToOrder.get(orderIdAndBroker);
         if (orderToBeCancelled != null) {
             orders.remove(orderToBeCancelled);
             orderIdAndBrokerToOrder.remove(orderIdAndBroker);
+            cancelled = true;
         }
+        return cancelled;
     }
 
     @Override
-    public void modifyOrder(ModificationOrder modificationOrder) {
+    public boolean modifyOrder(ModificationOrder modificationOrder) {
+        boolean modified = false;
         Pair<Integer, String> orderIdAndBroker = Pair.of(modificationOrder.getModifiedOrderId(),
                 modificationOrder.getBroker());
         Order orderToBeModified = orderIdAndBrokerToOrder.get(orderIdAndBroker);
@@ -67,7 +71,9 @@ public class OrderBookSideImpl implements OrderBookSide {
                     orderToBeModified.getClient());
             orders.add(updatedOrder);
             orderIdAndBrokerToOrder.put(orderIdAndBroker, updatedOrder);
+            modified = true;
         }
+        return modified;
     }
 
     @Override

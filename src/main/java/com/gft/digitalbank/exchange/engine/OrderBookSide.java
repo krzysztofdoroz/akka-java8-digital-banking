@@ -13,8 +13,8 @@ import java.util.Optional;
 public interface OrderBookSide {
     void addOrder(Order order);
     List<Order> getOrders();
-    void cancelOrder(CancellationOrder cancellationOrder);
-    void modifyOrder(ModificationOrder modificationOrder);
+    boolean cancelOrder(CancellationOrder cancellationOrder);
+    boolean modifyOrder(ModificationOrder modificationOrder);
     Optional<Order> getTopOrder();
     Order pollTopOrder();
 }

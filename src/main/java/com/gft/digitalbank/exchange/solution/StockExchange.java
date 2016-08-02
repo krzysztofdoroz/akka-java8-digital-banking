@@ -3,7 +3,6 @@ package com.gft.digitalbank.exchange.solution;
 import com.gft.digitalbank.exchange.Exchange;
 import com.gft.digitalbank.exchange.listener.ProcessingListener;
 import com.gft.digitalbank.exchange.model.OrderBook;
-import com.gft.digitalbank.exchange.model.SolutionResult;
 import com.gft.digitalbank.exchange.model.Transaction;
 
 import javax.jms.JMSException;
@@ -17,7 +16,7 @@ import java.util.Set;
  */
 public class StockExchange implements Exchange {
 
-    private AsyncJMS asyncJMS;
+    private BrokersGateway brokersGateway;
     private ProcessingListener processingListener;
 
     @Override
@@ -29,13 +28,12 @@ public class StockExchange implements Exchange {
     public void setDestinations(List<String> list) {
 
         try {
-            asyncJMS = new AsyncJMS(list, processingListener);
+            brokersGateway = new BrokersGateway(list, processingListener);
         } catch (NamingException e) {
             e.printStackTrace();
         } catch (JMSException e) {
             e.printStackTrace();
         }
-//        throw new UnsupportedOperationException();
     }
 
     @Override

@@ -1,14 +1,17 @@
 package com.gft.digitalbank.exchange.domain;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
  * Created by krzysztof on 23/07/16.
  */
 
-@JsonIgnoreProperties({"id","messageType"})
+@JsonIgnoreProperties("messageType")
 public class CancellationOrder {
 
+    @JsonProperty("id")
+    private int orderId;
     private int cancelledOrderId;
     private String broker;
     private int timestamp;
@@ -17,7 +20,8 @@ public class CancellationOrder {
         // empty constructor for Jackson
     }
 
-    public CancellationOrder(int cancelledOrderId, String broker, int timestamp) {
+    public CancellationOrder(int orderId, int cancelledOrderId, String broker, int timestamp) {
+        this.orderId = orderId;
         this.cancelledOrderId = cancelledOrderId;
         this.broker = broker;
         this.timestamp = timestamp;
@@ -35,10 +39,15 @@ public class CancellationOrder {
         return broker;
     }
 
+    public int getOrderId() {
+        return orderId;
+    }
+
     @Override
     public String toString() {
         return "CancellationOrder{" +
-                "cancelledOrderId=" + cancelledOrderId +
+                "orderId=" + orderId +
+                ", cancelledOrderId=" + cancelledOrderId +
                 ", broker='" + broker + '\'' +
                 ", timestamp=" + timestamp +
                 '}';
