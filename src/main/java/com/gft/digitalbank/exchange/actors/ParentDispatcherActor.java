@@ -27,6 +27,7 @@ public class ParentDispatcherActor extends AbstractLoggingActor {
 
     private Set<String> products = new HashSet<>();
     public static final String PATH = "/user/parent-dispatcher/";
+    private static final int SHUTDOWN_TIMEOUT_IN_MS = 150;
     private int currentOrderNumber = 1;
     private int expectedAcks = 0;
     private NavigableSet<Order> pendingOrders = new TreeSet<>(new Comparator<Order>() {
@@ -53,7 +54,7 @@ public class ParentDispatcherActor extends AbstractLoggingActor {
                         match(Order.class, order -> {
 
                             if (order.getOrderId() == currentOrderNumber) {
-                                log().info("forwarding message to engine...|" + order);
+                                log().debug("forwarding message to engine...|" + order);
 
                                 context().actorSelection(PATH + order.getProduct()).tell(order, self());
                                 expectedAcks++;
@@ -63,7 +64,7 @@ public class ParentDispatcherActor extends AbstractLoggingActor {
                             }
                         }).
                         match(Ack.class, ack -> {
-                            log().info("RECEIVED ACK...");
+                            log().debug("RECEIVED ACK...");
 
                             currentOrderNumber++;
                             if (!pendingOrders.isEmpty() && pendingOrders.first().getOrderId() == currentOrderNumber) {
@@ -104,7 +105,6 @@ public class ParentDispatcherActor extends AbstractLoggingActor {
                             Order order = creationRequest.getOrder();
                             // keep track of products
                             products.add(order.getProduct());
-                            log().info("PRODUCTS:" + products);
                             try {
                                 context()
                                         .actorOf(Props.create(TransactionEngineActor.class, order.getProduct()),
@@ -116,9 +116,6 @@ public class ParentDispatcherActor extends AbstractLoggingActor {
                             context().actorSelection(PATH + order.getProduct()).tell(order, self());
 
                         }).
-//                        match(PartialResult.class, pr -> {
-//
-//                        }).
         match(Shutdown.class, s -> {
     log().info("SHUTTING DOWN PARENT from:" + sender() + "expected acks:" + s.getTotal() + " so far:" + currentOrderNumber);
 
@@ -127,7 +124,7 @@ public class ParentDispatcherActor extends AbstractLoggingActor {
         Set<Transaction> transactions = new HashSet<Transaction>();
 
         for (String product : products) {
-            Future<?> result = ask(context().system().actorSelection(PATH + product), UtilityMessages.SHUTDOWN, 5000);
+            Future<?> result = ask(context().system().actorSelection(PATH + product), UtilityMessages.SHUTDOWN, SHUTDOWN_TIMEOUT_IN_MS);
             PartialResult r = (PartialResult) Await.result(result, Duration.Inf());
             log().info("PARTIAL RES:" + r);
             if (r.getOrderBook().isPresent()) {
@@ -138,10 +135,10 @@ public class ParentDispatcherActor extends AbstractLoggingActor {
 
         BooksAndTransactions booksAndTransactions = new BooksAndTransactions(orderBooks, transactions);
 
-        log().info("RESULT:" + booksAndTransactions);
+        log().debug("RESULT:" + booksAndTransactions);
         sender().tell(booksAndTransactions, ActorRef.noSender());
     } else {
-        context().system().scheduler().scheduleOnce(Duration.create(5000, TimeUnit.MILLISECONDS), self(),
+        context().system().scheduler().scheduleOnce(Duration.create(SHUTDOWN_TIMEOUT_IN_MS, TimeUnit.MILLISECONDS), self(),
                 new ForceShutdown(s.getTotal(), sender()), context().dispatcher(), null);
     }
 
@@ -151,7 +148,7 @@ public class ParentDispatcherActor extends AbstractLoggingActor {
                             Set<Transaction> transactions = new HashSet<Transaction>();
 
                             for (String product : products) {
-                                Future<?> result = ask(context().system().actorSelection(PATH + product), UtilityMessages.SHUTDOWN, 5000);
+                                Future<?> result = ask(context().system().actorSelection(PATH + product), UtilityMessages.SHUTDOWN, SHUTDOWN_TIMEOUT_IN_MS);
                                 PartialResult r = (PartialResult) Await.result(result, Duration.Inf());
                                 log().info("PARTIAL RES:" + r);
                                 if (r.getOrderBook().isPresent()) {

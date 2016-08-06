@@ -27,7 +27,7 @@ public class TransactionEngineActor extends AbstractLoggingActor {
 
         receive(ReceiveBuilder.
                         match(Order.class, order -> {
-                            log().info("received message:" + order);
+                            log().debug("received message:" + order);
                             engine.processOrder(order);
                             sender().tell(new Ack(1), ActorRef.noSender());
 

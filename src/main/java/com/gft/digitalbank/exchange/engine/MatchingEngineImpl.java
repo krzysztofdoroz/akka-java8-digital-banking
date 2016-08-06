@@ -17,8 +17,6 @@ public class MatchingEngineImpl implements MatchingEngine {
     private final OrderBookSide sellSideOrderBook;
     private final TransactionRegister transactionRegister;
     private int transactionId = 1;
-//    private int nextOrderId = 1;
-
 
     public MatchingEngineImpl(String product) {
         this.product = product;
@@ -36,34 +34,10 @@ public class MatchingEngineImpl implements MatchingEngine {
 
     @Override
     public void processOrder(Order order) {
-        //   if (order.getOrderId() == nextOrderId) {
-
         addOrder(order);
-//            boolean continueMatching = true;
-//
-//            // find next orders from pending orders
-//            while (continueMatching) {
-//
-//                if (!pendingOrders.isEmpty() && pendingOrders.first().getOrderId() == nextOrderId) {
-//                    addOrder(pendingOrders.pollFirst());
-//
-//                } else if (!pendingModificationOrders.isEmpty() && pendingModificationOrders.first().getOrderId() == nextOrderId) {
-//                    modifyOrder(pendingModificationOrders.pollFirst());
-//                } else {
-//                    continueMatching = false;
-//                }
-//
-//            }
-
-        //   tryMatching();
-//        } else {
-//            pendingOrders.add(order);
-//        }
-
     }
 
     private void addOrder(final Order order) {
-        //  nextOrderId++;
         switch (order.getSide()) {
             case BUY:
                 buySideOrderBook.addOrder(order);
@@ -84,37 +58,13 @@ public class MatchingEngineImpl implements MatchingEngine {
 
     @Override
     public boolean modifyOrder(final ModificationOrder modificationOrder) {
-        // TODO: add map to route mod order to correct side
-        // if (nextOrderId == modificationOrder.getOrderId()) {
         boolean modified = buySideOrderBook.modifyOrder(modificationOrder) || sellSideOrderBook.modifyOrder(modificationOrder);
 
-        //    nextOrderId++;
-
-//            boolean continueMatching = true;
-//
-//            // find next orders from pending orders
-//            while (continueMatching) {
-//
-//                if (!pendingOrders.isEmpty() && pendingOrders.first().getOrderId() == nextOrderId) {
-//                    addOrder(pendingOrders.pollFirst());
-//
-//                } else if (!pendingModificationOrders.isEmpty() && pendingModificationOrders.first().getOrderId() == nextOrderId) {
-//                    modifyOrder(pendingModificationOrders.pollFirst());
-//                    tryMatching();
-//                } else {
-//                    continueMatching = false;
-//                }
-//
-//            }
         if (modified) {
             tryMatching();
         }
 
         return modified;
-//        } else {
-//            pendingModificationOrders.add(modificationOrder);
-//        }
-
     }
 
     @Override

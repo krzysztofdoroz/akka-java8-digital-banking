@@ -1,32 +1,23 @@
 package com.gft.digitalbank.exchange.solution;
 
-import static akka.pattern.Patterns.ask;
-import akka.actor.*;
-import com.fasterxml.jackson.core.JsonParseException;
-import com.fasterxml.jackson.databind.JsonMappingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import akka.actor.ActorRef;
+import akka.actor.ActorSystem;
+import akka.actor.DeadLetter;
+import akka.actor.Props;
 import com.gft.digitalbank.exchange.actors.DeadLetterActor;
 import com.gft.digitalbank.exchange.actors.ParentDispatcherActor;
-import com.gft.digitalbank.exchange.actors.messages.*;
-import com.gft.digitalbank.exchange.domain.*;
 import com.gft.digitalbank.exchange.engine.MatchingEngine;
 import com.gft.digitalbank.exchange.engine.TransactionRegister;
 import com.gft.digitalbank.exchange.engine.TransactionRegisterImpl;
 import com.gft.digitalbank.exchange.listener.ProcessingListener;
-import com.gft.digitalbank.exchange.model.OrderBook;
-import com.gft.digitalbank.exchange.model.SolutionResult;
-import com.gft.digitalbank.exchange.model.Transaction;
-import scala.concurrent.Await;
-import scala.concurrent.Future;
-import scala.concurrent.duration.Duration;
-import scala.util.Try;
 
 import javax.jms.*;
 import javax.naming.Context;
 import javax.naming.InitialContext;
 import javax.naming.NamingException;
-import java.io.IOException;
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -34,24 +25,22 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 public class BrokersGateway {
 
-    public static final String ORDER = "ORDER";
-    public static final String CANCEL = "CANCEL";
-    public static final String MODIFICATION = "MODIFICATION";
-    public static final String SHUTDOWN_NOTIFICATION = "SHUTDOWN_NOTIFICATION";
     private final List<String> dests;
     private final ProcessingListener processingListener;
     private AtomicInteger activeBrokers;
     private Map<String, MatchingEngine> productToEngine = new HashMap<>();
     TransactionRegister transactionRegister = new TransactionRegisterImpl();
+    ActorRef parentDispatcher;
+    ActorRef deadLetters ;
     private final ActorSystem system = ActorSystem.create("digitalBanking");
-    private int total = 0;
 
     public BrokersGateway(final List<String> dests, final ProcessingListener processingListener) throws NamingException, JMSException {
         this.dests = dests;
         this.processingListener = processingListener;
         this.activeBrokers = new AtomicInteger(dests.size());
-        ActorRef parentDispatcher = system.actorOf(Props.create(ParentDispatcherActor.class), "parent-dispatcher");
-        ActorRef deadLetters = system.actorOf(Props.create(DeadLetterActor.class), "dead-letter-actor");
+
+        parentDispatcher = system.actorOf(Props.create(ParentDispatcherActor.class), "parent-dispatcher");
+        deadLetters = system.actorOf(Props.create(DeadLetterActor.class), "dead-letter-actor");
 
         system.eventStream().subscribe(deadLetters, DeadLetter.class);
 
@@ -60,7 +49,6 @@ public class BrokersGateway {
 
         // Create a Connection
         Connection connection = connectionFactory.createConnection();
-        // connection.start();
 
         for (String queue : dests) {
 
@@ -70,99 +58,9 @@ public class BrokersGateway {
             Destination destination = session.createQueue(queue);
 
             MessageConsumer consumer = session.createConsumer(destination);
-            consumer.setMessageListener(new MessageListener() {
-                @Override
-                public void onMessage(Message message) {
-                    try {
+            consumer.setMessageListener(
+                    new JmsToAkkaMessageDispatcher(session, activeBrokers, processingListener, system, parentDispatcher)  );
 
-                        String payload = ((TextMessage) message).getText();
-                        String type = message.getStringProperty("messageType");
-
-                        ObjectMapper mapper = new ObjectMapper();
-
-                        switch (type) {
-                            case ORDER:
-                                Order order = mapper.readValue(payload, Order.class);
-//                                String product = order.getProduct();
-                                     system.actorSelection("/user/parent-dispatcher").tell(order, ActorRef.noSender());
-                                total++;
-
-                                break;
-                            case CANCEL:
-                                CancellationOrder cancellationOrder = mapper.readValue(payload, CancellationOrder.class);
-
-//                                for (MatchingEngine engine : productToEngine.values()) {
-//                                     engine.cancelOrder(cancellationOrder);
-//                                }
-                                parentDispatcher.tell(cancellationOrder, ActorRef.noSender());
-                                total++;
-                                System.out.println("CANCEL:" + cancellationOrder);
-                                break;
-                            case MODIFICATION:
-                                ModificationOrder modificationOrder = mapper.readValue(payload, ModificationOrder.class);
-                                System.out.println("MODIFICATION:" + modificationOrder);
-//                                for (MatchingEngine engine : productToEngine.values()) {
-//                                    engine.modifyOrder(modificationOrder);
-//                                }
-                                parentDispatcher.tell(modificationOrder, ActorRef.noSender());
-                                total++;
-                                break;
-                            case SHUTDOWN_NOTIFICATION:
-                                ShutdownNotification shutdownNotification = mapper.readValue(payload, ShutdownNotification.class);
-                                System.out.println("SHUTDOWN_NOTIFICATION:" + shutdownNotification);
-                                // return result from matching engine
-
-                                session.close();
-
-                                // kill connection for this broker
-                                if (activeBrokers.decrementAndGet() == 0) {
-                                    Set<OrderBook> orderBooks = new HashSet<OrderBook>();
-                                    Set<Transaction> transactions = new HashSet<Transaction>();
-
-                                    Future<?> result = ask(parentDispatcher, new Shutdown(total), 15000);
-
-                                    Object r = Await.result(result, Duration.Inf());
-                                    System.out.println("result from akka:" + r);
-                                    if (r instanceof BooksAndTransactions) {
-                                        orderBooks = ((BooksAndTransactions)r).getOrderBooks();
-                                        transactions = ((BooksAndTransactions)r ).getTransactions();
-                                    }
-
-//                                    for (MatchingEngine engine : productToEngine.values()){
-//                                        if(engine.getOrderBook().isPresent()) {
-//                                            orderBooks.add(engine.getOrderBook().get());
-//                                        }
-//                                    }
-
-                                    system.shutdown();
-
-                                    processingListener.processingDone(
-                                            SolutionResult.builder()
-                                                    .transactions(transactions) // transactions is a Set<Transaction>
-                                                    .orderBooks(orderBooks) // orderBooks is a Set<OrderBook>
-                                                    .build()
-                                    );
-
-                                }
-
-                                break;
-                            default:
-                                // log warn
-                        }
-
-                    } catch (JMSException e) {
-                        e.printStackTrace();
-                    } catch (JsonMappingException e) {
-                        e.printStackTrace();
-                    } catch (JsonParseException e) {
-                        e.printStackTrace();
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
-                }
-            });
             connection.start();
         }
 
