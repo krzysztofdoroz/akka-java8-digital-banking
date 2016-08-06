@@ -3,7 +3,6 @@ package com.gft.digitalbank.exchange.actors;
 import akka.actor.AbstractLoggingActor;
 import akka.actor.ActorRef;
 import akka.japi.pf.ReceiveBuilder;
-import com.gft.digitalbank.exchange.actors.messages.Ack;
 import com.gft.digitalbank.exchange.actors.messages.PartialResult;
 import com.gft.digitalbank.exchange.actors.messages.UtilityMessages;
 import com.gft.digitalbank.exchange.domain.CancellationOrder;
@@ -29,17 +28,17 @@ public class TransactionEngineActor extends AbstractLoggingActor {
                         match(Order.class, order -> {
                             log().debug("received message:" + order);
                             engine.processOrder(order);
-                            sender().tell(new Ack(1), ActorRef.noSender());
+                            sender().tell(UtilityMessages.ACK, ActorRef.noSender());
 
                         }).
                         match(ModificationOrder.class, mod -> {
                             if(engine.modifyOrder(mod)) {
-                                sender().tell(new Ack(1), ActorRef.noSender());
+                                sender().tell(UtilityMessages.ACK, ActorRef.noSender());
                             }
                         }).
                         match(CancellationOrder.class, cancel -> {
                             if (engine.cancelOrder(cancel)) {
-                                sender().tell(new Ack(1), ActorRef.noSender());
+                                sender().tell(UtilityMessages.ACK, ActorRef.noSender());
                             }
                         }).
                         matchEquals(UtilityMessages.SHUTDOWN, s -> {
@@ -49,6 +48,4 @@ public class TransactionEngineActor extends AbstractLoggingActor {
                         .build()
         );
     }
-
-
 }

@@ -29,7 +29,6 @@ public class ParentDispatcherActor extends AbstractLoggingActor {
     public static final String PATH = "/user/parent-dispatcher/";
     private static final int SHUTDOWN_TIMEOUT_IN_MS = 150;
     private int currentOrderNumber = 1;
-    private int expectedAcks = 0;
     private NavigableSet<Order> pendingOrders = new TreeSet<>(new Comparator<Order>() {
         @Override
         public int compare(Order o1, Order o2) {
@@ -52,98 +51,95 @@ public class ParentDispatcherActor extends AbstractLoggingActor {
     public ParentDispatcherActor() {
         receive(ReceiveBuilder.
                         match(Order.class, order -> {
-
                             if (order.getOrderId() == currentOrderNumber) {
-                                log().debug("forwarding message to engine...|" + order);
-
+                                log().debug("forwarding message to engine..." + order);
                                 context().actorSelection(PATH + order.getProduct()).tell(order, self());
-                                expectedAcks++;
                             } else {
-                                log().info("parked messaeg");
+                                log().info("message out of order, buffered for now");
                                 pendingOrders.add(order);
                             }
                         }).
-                        match(Ack.class, ack -> {
-                            log().debug("RECEIVED ACK...");
+                        matchEquals(UtilityMessages.ACK, ack -> {
+                            log().debug("received ACK...");
 
                             currentOrderNumber++;
+                            // maybe one of previously buffered messages can be forwarded now...
                             if (!pendingOrders.isEmpty() && pendingOrders.first().getOrderId() == currentOrderNumber) {
                                 Order order = pendingOrders.pollFirst();
                                 context().actorSelection(PATH + order.getProduct()).tell(order, self());
-                                expectedAcks++;
-
                             } else if (!pendingModificationOrders.isEmpty() && pendingModificationOrders.first().getOrderId() == currentOrderNumber) {
                                 ModificationOrder modificationOrder = pendingModificationOrders.pollFirst();
                                 context().actorSelection(PATH + "*").tell(modificationOrder, self());
-                                expectedAcks++;
                             } else if (!pendingCancellationOrders.isEmpty() && pendingCancellationOrders.first().getOrderId() == currentOrderNumber) {
                                 CancellationOrder cancellationOrder = pendingCancellationOrders.pollFirst();
                                 context().actorSelection(PATH + "*").tell(cancellationOrder, self());
-                                expectedAcks++;
                             }
                         }).
                         match(ModificationOrder.class, modOrder -> {
                             if (modOrder.getOrderId() == currentOrderNumber) {
                                 log().info("Sending modification order.." + modOrder);
                                 context().actorSelection(PATH + "*").tell(modOrder, self());
-                                expectedAcks++;
                             } else {
+                                // out of order message, buffer for now
                                 pendingModificationOrders.add(modOrder);
                             }
 
                         }).
                         match(CancellationOrder.class, cancellationOrder -> {
                             if (cancellationOrder.getOrderId() == currentOrderNumber) {
+                                log().info("Sending cancellation order.." + cancellationOrder);
                                 context().actorSelection(PATH + "*").tell(cancellationOrder, self());
-                                expectedAcks++;
                             } else {
+                                // out of order message, buffer for now
                                 pendingCancellationOrders.add(cancellationOrder);
                             }
                         }).
                         match(ActorCreationRequest.class, creationRequest -> {
                             log().info("creating new engine actor");
                             Order order = creationRequest.getOrder();
+
                             // keep track of products
                             products.add(order.getProduct());
+
                             try {
                                 context()
                                         .actorOf(Props.create(TransactionEngineActor.class, order.getProduct()),
                                                 order.getProduct());
                             } catch (InvalidActorNameException ex) {
-                                log().info("actor creation failed - there is already an actor with this path" + ex);
+                                log().error("actor creation failed - there is already an actor with this path" + ex);
                             }
 
                             context().actorSelection(PATH + order.getProduct()).tell(order, self());
 
                         }).
-        match(Shutdown.class, s -> {
-    log().info("SHUTTING DOWN PARENT from:" + sender() + "expected acks:" + s.getTotal() + " so far:" + currentOrderNumber);
+                        match(Shutdown.class, s -> {
+                            log().info("SHUTTING DOWN PARENT from:" + sender() + "expected acks:" + s.getTotal() + " so far:" + currentOrderNumber);
 
-    if (s.getTotal() == currentOrderNumber - 1) {
-        Set<OrderBook> orderBooks = new HashSet<OrderBook>();
-        Set<Transaction> transactions = new HashSet<Transaction>();
+                            if (s.getTotal() == currentOrderNumber - 1) {
+                                Set<OrderBook> orderBooks = new HashSet<OrderBook>();
+                                Set<Transaction> transactions = new HashSet<Transaction>();
 
-        for (String product : products) {
-            Future<?> result = ask(context().system().actorSelection(PATH + product), UtilityMessages.SHUTDOWN, SHUTDOWN_TIMEOUT_IN_MS);
-            PartialResult r = (PartialResult) Await.result(result, Duration.Inf());
-            log().info("PARTIAL RES:" + r);
-            if (r.getOrderBook().isPresent()) {
-                orderBooks.add(r.getOrderBook().get());
-            }
-            transactions.addAll(r.getTransactions());
-        }
+                                for (String product : products) {
+                                    Future<?> result = ask(context().system().actorSelection(PATH + product), UtilityMessages.SHUTDOWN, SHUTDOWN_TIMEOUT_IN_MS);
+                                    PartialResult r = (PartialResult) Await.result(result, Duration.Inf());
+                                    log().info("PARTIAL RES:" + r);
+                                    if (r.getOrderBook().isPresent()) {
+                                        orderBooks.add(r.getOrderBook().get());
+                                    }
+                                    transactions.addAll(r.getTransactions());
+                                }
 
-        BooksAndTransactions booksAndTransactions = new BooksAndTransactions(orderBooks, transactions);
+                                BooksAndTransactions booksAndTransactions = new BooksAndTransactions(orderBooks, transactions);
 
-        log().debug("RESULT:" + booksAndTransactions);
-        sender().tell(booksAndTransactions, ActorRef.noSender());
-    } else {
-        context().system().scheduler().scheduleOnce(Duration.create(SHUTDOWN_TIMEOUT_IN_MS, TimeUnit.MILLISECONDS), self(),
-                new ForceShutdown(s.getTotal(), sender()), context().dispatcher(), null);
-    }
+                                log().debug("RESULT:" + booksAndTransactions);
+                                sender().tell(booksAndTransactions, ActorRef.noSender());
+                            } else {
+                                context().system().scheduler().scheduleOnce(Duration.create(SHUTDOWN_TIMEOUT_IN_MS, TimeUnit.MILLISECONDS), self(),
+                                        new ForceShutdown(s.getTotal(), sender()), context().dispatcher(), null);
+                            }
 
-}).
-                        match(ForceShutdown.class, s ->{
+                        }).
+                        match(ForceShutdown.class, s -> {
                             Set<OrderBook> orderBooks = new HashSet<OrderBook>();
                             Set<Transaction> transactions = new HashSet<Transaction>();
 

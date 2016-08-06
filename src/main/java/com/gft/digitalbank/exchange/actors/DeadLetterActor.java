@@ -12,6 +12,8 @@ import com.gft.digitalbank.exchange.domain.Order;
  */
 public class DeadLetterActor extends AbstractLoggingActor {
 
+    private static final String PATH = "/user/parent-dispatcher";
+
     public DeadLetterActor() {
         receive(ReceiveBuilder.
                         match(DeadLetter.class, message -> {
@@ -19,7 +21,7 @@ public class DeadLetterActor extends AbstractLoggingActor {
                                 log().info("missing actor, sending request...");
                                 Order payload = (Order) ((DeadLetter) message).message();
 
-                                context().system().actorFor("/user/parent-dispatcher").tell(new ActorCreationRequest(payload), ActorRef.noSender());
+                                context().system().actorFor(PATH).tell(new ActorCreationRequest(payload), ActorRef.noSender());
                             }
                         }).
                         build()
