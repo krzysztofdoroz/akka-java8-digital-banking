@@ -2,18 +2,14 @@ package com.gft.digitalbank.exchange.solution;
 
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
-import akka.actor.DeadLetter;
-import akka.actor.Props;
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.gft.digitalbank.exchange.actors.DeadLetterActor;
-import com.gft.digitalbank.exchange.actors.ParentDispatcherActor;
-import com.gft.digitalbank.exchange.actors.messages.*;
+import com.gft.digitalbank.exchange.actors.messages.BooksAndTransactions;
+import com.gft.digitalbank.exchange.actors.messages.Shutdown;
 import com.gft.digitalbank.exchange.domain.CancellationOrder;
 import com.gft.digitalbank.exchange.domain.ModificationOrder;
 import com.gft.digitalbank.exchange.domain.Order;
-import com.gft.digitalbank.exchange.domain.ShutdownNotification;
 import com.gft.digitalbank.exchange.listener.ProcessingListener;
 import com.gft.digitalbank.exchange.model.OrderBook;
 import com.gft.digitalbank.exchange.model.SolutionResult;
@@ -40,13 +36,12 @@ public class JmsToAkkaMessageDispatcher implements MessageListener {
     public static final String MODIFICATION = "MODIFICATION";
     public static final String SHUTDOWN_NOTIFICATION = "SHUTDOWN_NOTIFICATION";
 
-
     private int total = 0;
     private final Session session;
     private final AtomicInteger activeBrokers;
-    final ProcessingListener processingListener;
-    final ActorSystem system;
-    final ActorRef parentDispatcher;
+    private final ProcessingListener processingListener;
+    private final ActorSystem system;
+    private final ActorRef parentDispatcher;
 
     public JmsToAkkaMessageDispatcher(final Session session, final AtomicInteger activeBrokers,
                                       final ProcessingListener processingListener, final ActorSystem system,
@@ -56,7 +51,6 @@ public class JmsToAkkaMessageDispatcher implements MessageListener {
         this.processingListener = processingListener;
         this.system = system;
         this.parentDispatcher = parentDispatcher;
-
     }
 
     @Override
@@ -78,9 +72,6 @@ public class JmsToAkkaMessageDispatcher implements MessageListener {
                 case CANCEL:
                     CancellationOrder cancellationOrder = mapper.readValue(payload, CancellationOrder.class);
 
-//                                for (MatchingEngine engine : productToEngine.values()) {
-//                                     engine.cancelOrder(cancellationOrder);
-//                                }
                     parentDispatcher.tell(cancellationOrder, ActorRef.noSender());
                     total++;
                     System.out.println("CANCEL:" + cancellationOrder);
@@ -88,20 +79,13 @@ public class JmsToAkkaMessageDispatcher implements MessageListener {
                 case MODIFICATION:
                     ModificationOrder modificationOrder = mapper.readValue(payload, ModificationOrder.class);
                     System.out.println("MODIFICATION:" + modificationOrder);
-//                                for (MatchingEngine engine : productToEngine.values()) {
-//                                    engine.modifyOrder(modificationOrder);
-//                                }
                     parentDispatcher.tell(modificationOrder, ActorRef.noSender());
                     total++;
                     break;
                 case SHUTDOWN_NOTIFICATION:
-                    ShutdownNotification shutdownNotification = mapper.readValue(payload, ShutdownNotification.class);
-                    System.out.println("SHUTDOWN_NOTIFICATION:" + shutdownNotification);
-                    // return result from matching engine
 
                     session.close();
 
-                    // kill connection for this broker
                     if (activeBrokers.decrementAndGet() == 0) {
                         Set<OrderBook> orderBooks = new HashSet<OrderBook>();
                         Set<Transaction> transactions = new HashSet<Transaction>();
@@ -113,13 +97,9 @@ public class JmsToAkkaMessageDispatcher implements MessageListener {
                         if (r instanceof BooksAndTransactions) {
                             orderBooks = ((BooksAndTransactions) r).getOrderBooks();
                             transactions = ((BooksAndTransactions) r).getTransactions();
+                        } else {
+                            // log error
                         }
-
-//                                    for (MatchingEngine engine : productToEngine.values()){
-//                                        if(engine.getOrderBook().isPresent()) {
-//                                            orderBooks.add(engine.getOrderBook().get());
-//                                        }
-//                                    }
 
                         system.shutdown();
 

@@ -102,12 +102,7 @@ public class MatchingEngineImpl implements MatchingEngine {
                     Order buySide = buySideOrderBook.pollTopOrder();
                     Order sellSide = sellSideOrderBook.pollTopOrder();
 
-                    int txPrice;
-                    if (buySide.getTimestamp() > sellSide.getTimestamp()) {
-                        txPrice = sellSide.getPrice();
-                    } else {
-                        txPrice = buySide.getPrice();
-                    }
+                    int txPrice = findTxPrice(buySide, sellSide);
                     int txAmount = Math.min(buySide.getAmount(), sellSide.getAmount());
 
                     Transaction tx = new Transaction(transactionId++, txAmount, txPrice, product,
@@ -116,12 +111,12 @@ public class MatchingEngineImpl implements MatchingEngine {
 
                     if (txAmount < buySide.getAmount()) {
                         // partial order
-                        buySideOrderBook.addOrder(new Order(buySide.getOrderId(), "A", buySide.getSide(), buySide.getPrice(),
+                        buySideOrderBook.addOrder(new Order(buySide.getOrderId(), product, buySide.getSide(), buySide.getPrice(),
                                 buySide.getTimestamp(), buySide.getAmount() - txAmount, buySide.getBroker(), buySide.getClient()));
                     }
                     if (txAmount < sellSide.getAmount()) {
                         // partial order
-                        sellSideOrderBook.addOrder(new Order(sellSide.getOrderId(), "A", sellSide.getSide(), sellSide.getPrice(),
+                        sellSideOrderBook.addOrder(new Order(sellSide.getOrderId(), product, sellSide.getSide(), sellSide.getPrice(),
                                 sellSide.getTimestamp(), sellSide.getAmount() - txAmount, sellSide.getBroker(), sellSide.getClient()));
                     }
 
@@ -131,6 +126,14 @@ public class MatchingEngineImpl implements MatchingEngine {
             } else {
                 stillMatching = false;
             }
+        }
+    }
+
+    private int findTxPrice(final Order buySideOrder, final Order sellSideOrder) {
+        if (buySideOrder.getTimestamp() > sellSideOrder.getTimestamp()) {
+            return sellSideOrder.getPrice();
+        } else {
+            return buySideOrder.getPrice();
         }
     }
 

@@ -6,18 +6,13 @@ import akka.actor.DeadLetter;
 import akka.actor.Props;
 import com.gft.digitalbank.exchange.actors.DeadLetterActor;
 import com.gft.digitalbank.exchange.actors.ParentDispatcherActor;
-import com.gft.digitalbank.exchange.engine.MatchingEngine;
-import com.gft.digitalbank.exchange.engine.TransactionRegister;
-import com.gft.digitalbank.exchange.engine.TransactionRegisterImpl;
 import com.gft.digitalbank.exchange.listener.ProcessingListener;
 
 import javax.jms.*;
 import javax.naming.Context;
 import javax.naming.InitialContext;
 import javax.naming.NamingException;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -27,11 +22,9 @@ public class BrokersGateway {
 
     private final List<String> dests;
     private final ProcessingListener processingListener;
-    private AtomicInteger activeBrokers;
-    private Map<String, MatchingEngine> productToEngine = new HashMap<>();
-    TransactionRegister transactionRegister = new TransactionRegisterImpl();
-    ActorRef parentDispatcher;
-    ActorRef deadLetters ;
+    private final AtomicInteger activeBrokers;
+    private final ActorRef parentDispatcher;
+    private final ActorRef deadLetters;
     private final ActorSystem system = ActorSystem.create("digitalBanking");
 
     public BrokersGateway(final List<String> dests, final ProcessingListener processingListener) throws NamingException, JMSException {
@@ -63,8 +56,5 @@ public class BrokersGateway {
 
             connection.start();
         }
-
     }
-
-
 }

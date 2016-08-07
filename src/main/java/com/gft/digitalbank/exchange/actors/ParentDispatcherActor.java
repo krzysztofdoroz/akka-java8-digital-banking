@@ -113,53 +113,75 @@ public class ParentDispatcherActor extends AbstractLoggingActor {
 
                         }).
                         match(Shutdown.class, s -> {
-                            log().info("SHUTTING DOWN PARENT from:" + sender() + "expected acks:" + s.getTotal() + " so far:" + currentOrderNumber);
+                            log().info(new Date() + ":SHUTTING DOWN PARENT from:" + sender());
 
                             if (s.getTotal() == currentOrderNumber - 1) {
-                                Set<OrderBook> orderBooks = new HashSet<OrderBook>();
-                                Set<Transaction> transactions = new HashSet<Transaction>();
-
-                                for (String product : products) {
-                                    Future<?> result = ask(context().system().actorSelection(PATH + product), UtilityMessages.SHUTDOWN, SHUTDOWN_TIMEOUT_IN_MS);
-                                    PartialResult r = (PartialResult) Await.result(result, Duration.Inf());
-                                    log().info("PARTIAL RES:" + r);
-                                    if (r.getOrderBook().isPresent()) {
-                                        orderBooks.add(r.getOrderBook().get());
-                                    }
-                                    transactions.addAll(r.getTransactions());
-                                }
-
-                                BooksAndTransactions booksAndTransactions = new BooksAndTransactions(orderBooks, transactions);
-
-                                log().debug("RESULT:" + booksAndTransactions);
-                                sender().tell(booksAndTransactions, ActorRef.noSender());
+                                sendResults(sender());
                             } else {
-                                context().system().scheduler().scheduleOnce(Duration.create(SHUTDOWN_TIMEOUT_IN_MS, TimeUnit.MILLISECONDS), self(),
+                                context().system().scheduler().scheduleOnce(Duration.create(2000, TimeUnit.MILLISECONDS), self(),
                                         new ForceShutdown(s.getTotal(), sender()), context().dispatcher(), null);
                             }
 
                         }).
                         match(ForceShutdown.class, s -> {
-                            Set<OrderBook> orderBooks = new HashSet<OrderBook>();
-                            Set<Transaction> transactions = new HashSet<Transaction>();
-
-                            for (String product : products) {
-                                Future<?> result = ask(context().system().actorSelection(PATH + product), UtilityMessages.SHUTDOWN, SHUTDOWN_TIMEOUT_IN_MS);
-                                PartialResult r = (PartialResult) Await.result(result, Duration.Inf());
-                                log().info("PARTIAL RES:" + r);
-                                if (r.getOrderBook().isPresent()) {
-                                    orderBooks.add(r.getOrderBook().get());
-                                }
-                                transactions.addAll(r.getTransactions());
-                            }
-
-                            BooksAndTransactions booksAndTransactions = new BooksAndTransactions(orderBooks, transactions);
-
-                            log().info("RESULT:" + booksAndTransactions);
-                            s.getDestination().tell(booksAndTransactions, ActorRef.noSender());
+                            log().warning(new Date() + ": forcing shutdown");
+                            clearAllPendingMessages();
+                            sendResults(s.getDestination());
                         }).
                         build()
         );
+    }
+
+    private void clearAllPendingMessages() {
+        // first clear all pending messages
+        NavigableMap<Integer, Object> pendingMessagesInAscendingOrd = new TreeMap<Integer, Object>();
+        if (!pendingOrders.isEmpty()) {
+            for (Order order : pendingOrders) {
+                pendingMessagesInAscendingOrd.put(order.getOrderId(), order);
+            }
+        }
+        if (!pendingModificationOrders.isEmpty()) {
+            for (ModificationOrder modificationOrder : pendingModificationOrders) {
+                pendingMessagesInAscendingOrd.put(modificationOrder.getOrderId(), modificationOrder);
+            }
+        }
+        if (!pendingCancellationOrders.isEmpty()) {
+            for (CancellationOrder cancellationOrder : pendingCancellationOrders) {
+                pendingMessagesInAscendingOrd.put(cancellationOrder.getOrderId(), cancellationOrder);
+            }
+        }
+
+        log().info(pendingMessagesInAscendingOrd.size() + " messages will be forwarded");
+
+        while (!pendingMessagesInAscendingOrd.isEmpty()) {
+            Map.Entry<Integer, Object> entry = pendingMessagesInAscendingOrd.pollFirstEntry();
+            if (entry.getValue() instanceof Order) {
+                Order order = (Order) entry.getValue();
+                context().actorSelection(PATH + order.getProduct()).tell(order, self());
+            } else {
+                context().actorSelection(PATH + "*").tell(entry.getValue(), self());
+            }
+        }
+    }
+
+    private void sendResults(final ActorRef destination) throws Exception {
+        Set<OrderBook> orderBooks = new HashSet<OrderBook>();
+        Set<Transaction> transactions = new HashSet<Transaction>();
+
+        for (String product : products) {
+            Future<?> result = ask(context().system().actorSelection(PATH + product), UtilityMessages.SHUTDOWN, SHUTDOWN_TIMEOUT_IN_MS);
+            PartialResult r = (PartialResult) Await.result(result, Duration.Inf());
+            log().info("PARTIAL RES:" + r);
+            if (r.getOrderBook().isPresent()) {
+                orderBooks.add(r.getOrderBook().get());
+            }
+            transactions.addAll(r.getTransactions());
+        }
+
+        BooksAndTransactions booksAndTransactions = new BooksAndTransactions(orderBooks, transactions);
+
+        log().info("RESULT:" + booksAndTransactions);
+        destination.tell(booksAndTransactions, ActorRef.noSender());
     }
 
 }
