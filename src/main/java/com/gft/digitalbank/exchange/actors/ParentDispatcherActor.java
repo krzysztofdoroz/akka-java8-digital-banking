@@ -171,7 +171,7 @@ public class ParentDispatcherActor extends AbstractLoggingActor {
         for (String product : products) {
             Future<?> result = ask(context().system().actorSelection(PATH + product), UtilityMessages.SHUTDOWN, SHUTDOWN_TIMEOUT_IN_MS);
             PartialResult r = (PartialResult) Await.result(result, Duration.Inf());
-            log().info("PARTIAL RES:" + r);
+            log().info("PARTIAL RESULT:" + r);
             if (r.getOrderBook().isPresent()) {
                 orderBooks.add(r.getOrderBook().get());
             }

@@ -8,7 +8,7 @@ import akka.actor.ActorRef;
 public class ForceShutdown {
 
     private int total;
-    private ActorRef destination;
+    private final ActorRef destination;
 
     public ForceShutdown(int total, ActorRef destination) {
         this.total = total;
