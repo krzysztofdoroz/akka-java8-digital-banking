@@ -27,28 +27,15 @@ public class ParentDispatcherActor extends AbstractLoggingActor {
 
     private Set<String> products = new HashSet<>();
     public static final String PATH = "/user/parent-dispatcher/";
-    private static final int SHUTDOWN_TIMEOUT_IN_MS = 150;
+    private final int shutdownTimeoutInMs;
     private int currentOrderNumber = 1;
-    private NavigableSet<Order> pendingOrders = new TreeSet<>(new Comparator<Order>() {
-        @Override
-        public int compare(Order o1, Order o2) {
-            return Integer.valueOf(o1.getOrderId()).compareTo(Integer.valueOf(o2.getOrderId()));
-        }
-    });
-    private NavigableSet<ModificationOrder> pendingModificationOrders = new TreeSet<>(new Comparator<ModificationOrder>() {
-        @Override
-        public int compare(ModificationOrder o1, ModificationOrder o2) {
-            return Integer.valueOf(o1.getOrderId()).compareTo(Integer.valueOf(o2.getOrderId()));
-        }
-    });
-    private NavigableSet<CancellationOrder> pendingCancellationOrders = new TreeSet<>(new Comparator<CancellationOrder>() {
-        @Override
-        public int compare(CancellationOrder o1, CancellationOrder o2) {
-            return Integer.valueOf(o1.getOrderId()).compareTo(Integer.valueOf(o2.getOrderId()));
-        }
-    });
+    private NavigableSet<Order> pendingOrders = new TreeSet<Order>((o1, o2) -> Integer.valueOf(o1.getOrderId()).compareTo(Integer.valueOf(o2.getOrderId())));
+    private NavigableSet<ModificationOrder> pendingModificationOrders = new TreeSet<ModificationOrder>((o1, o2) -> Integer.valueOf(o1.getOrderId()).compareTo(Integer.valueOf(o2.getOrderId())));
+    private NavigableSet<CancellationOrder> pendingCancellationOrders = new TreeSet<CancellationOrder>((o1, o2) -> Integer.valueOf(o1.getOrderId()).compareTo(Integer.valueOf(o2.getOrderId())));
 
-    public ParentDispatcherActor() {
+    public ParentDispatcherActor(int shutdownTimeoutInMs) {
+        this.shutdownTimeoutInMs = shutdownTimeoutInMs;
+
         receive(ReceiveBuilder.
                         match(Order.class, order -> {
                             if (order.getOrderId() == currentOrderNumber) {
@@ -118,7 +105,7 @@ public class ParentDispatcherActor extends AbstractLoggingActor {
                             if (s.getTotal() == currentOrderNumber - 1) {
                                 sendResults(sender());
                             } else {
-                                context().system().scheduler().scheduleOnce(Duration.create(2000, TimeUnit.MILLISECONDS), self(),
+                                context().system().scheduler().scheduleOnce(Duration.create(shutdownTimeoutInMs, TimeUnit.MILLISECONDS), self(),
                                         new ForceShutdown(s.getTotal(), sender()), context().dispatcher(), null);
                             }
 
@@ -165,11 +152,11 @@ public class ParentDispatcherActor extends AbstractLoggingActor {
     }
 
     private void sendResults(final ActorRef destination) throws Exception {
-        Set<OrderBook> orderBooks = new HashSet<OrderBook>();
-        Set<Transaction> transactions = new HashSet<Transaction>();
+        Set<OrderBook> orderBooks = new HashSet<>();
+        Set<Transaction> transactions = new HashSet<>();
 
         for (String product : products) {
-            Future<?> result = ask(context().system().actorSelection(PATH + product), UtilityMessages.SHUTDOWN, SHUTDOWN_TIMEOUT_IN_MS);
+            Future<?> result = ask(context().system().actorSelection(PATH + product), UtilityMessages.SHUTDOWN, shutdownTimeoutInMs);
             PartialResult r = (PartialResult) Await.result(result, Duration.Inf());
             log().info("PARTIAL RESULT:" + r);
             if (r.getOrderBook().isPresent()) {

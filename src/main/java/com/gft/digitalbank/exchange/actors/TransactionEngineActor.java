@@ -16,12 +16,10 @@ import com.gft.digitalbank.exchange.engine.MatchingEngineImpl;
  */
 public class TransactionEngineActor extends AbstractLoggingActor {
 
-    private final String product;
     private final MatchingEngine engine;
 
     public TransactionEngineActor(final String product) {
 
-        this.product = product;
         this.engine = new MatchingEngineImpl(product);
 
         receive(ReceiveBuilder.

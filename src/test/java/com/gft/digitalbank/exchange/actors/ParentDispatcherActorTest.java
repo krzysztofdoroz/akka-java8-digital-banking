@@ -34,7 +34,7 @@ public class ParentDispatcherActorTest {
             // given
             ActorRef deadLetters = system.actorOf(Props.create(DeadLetterActor.class), "dead-letter-actor");
             system.eventStream().subscribe(deadLetters, DeadLetter.class);
-            final Props props = Props.create(ParentDispatcherActor.class);
+            final Props props = Props.create(ParentDispatcherActor.class, 300);
             final ActorRef parentDispatcher = system.actorOf(props, "parent-dispatcher");
 
             // when
@@ -56,7 +56,7 @@ public class ParentDispatcherActorTest {
             // given
             ActorRef deadLetters = system.actorOf(Props.create(DeadLetterActor.class), "dead-letter-actor");
             system.eventStream().subscribe(deadLetters, DeadLetter.class);
-            final Props props = Props.create(ParentDispatcherActor.class);
+            final Props props = Props.create(ParentDispatcherActor.class, 300);
             final ActorRef parentDispatcher = system.actorOf(props, "parent-dispatcher");
 
             // when

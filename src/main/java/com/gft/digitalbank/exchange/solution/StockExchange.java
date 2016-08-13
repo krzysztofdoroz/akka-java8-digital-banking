@@ -35,9 +35,9 @@ public class StockExchange implements Exchange {
         try {
             brokersGateway = new BrokersGateway(dests, processingListener);
         } catch (NamingException e) {
-            LOG.error("Naming exception", e);
+            LOG.error("Failed to start brokers gateway due to:", e);
         } catch (JMSException e) {
-            LOG.error("JMS issues", e);
+            LOG.error("Failed to start brokers gateway due to:", e);
         }
     }
 }

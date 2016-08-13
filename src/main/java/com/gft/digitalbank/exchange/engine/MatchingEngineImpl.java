@@ -94,7 +94,6 @@ public class MatchingEngineImpl implements MatchingEngine {
             Optional<Order> buySideOrder = buySideOrderBook.getTopOrder();
             Optional<Order> sellSideOrder = sellSideOrderBook.getTopOrder();
 
-            // TODO: flatmap instead?
             if (buySideOrder.isPresent() && sellSideOrder.isPresent()) {
 
                 if (buySideOrder.get().getPrice() >= sellSideOrder.get().getPrice()) {

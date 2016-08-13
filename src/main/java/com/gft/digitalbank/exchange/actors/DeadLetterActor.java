@@ -17,9 +17,9 @@ public class DeadLetterActor extends AbstractLoggingActor {
     public DeadLetterActor() {
         receive(ReceiveBuilder.
                         match(DeadLetter.class, message -> {
-                            if (((DeadLetter) message).message() instanceof Order) {
+                            if (message.message() instanceof Order) {
                                 log().info("missing actor, sending request...");
-                                Order payload = (Order) ((DeadLetter) message).message();
+                                Order payload = (Order) message.message();
 
                                 context().system().actorFor(PATH).tell(new ActorCreationRequest(payload), ActorRef.noSender());
                             }
