@@ -25,8 +25,8 @@ import static akka.pattern.Patterns.ask;
  */
 public class ParentDispatcherActor extends AbstractLoggingActor {
 
+    public static final String ALL_CHILDREN = "*";
     private Set<String> products = new HashSet<>();
-    public static final String PATH = "/user/parent-dispatcher/";
     private final int shutdownTimeoutInMs;
     private int currentOrderNumber = 1;
     private NavigableSet<Order> pendingOrders = new TreeSet<Order>((o1, o2) -> Integer.valueOf(o1.getOrderId()).compareTo(Integer.valueOf(o2.getOrderId())));
@@ -40,7 +40,7 @@ public class ParentDispatcherActor extends AbstractLoggingActor {
                         match(Order.class, order -> {
                             if (order.getOrderId() == currentOrderNumber) {
                                 log().debug("forwarding message to engine..." + order);
-                                context().actorSelection(PATH + order.getProduct()).tell(order, self());
+                                context().actorSelection(order.getProduct()).tell(order, self());
                             } else {
                                 log().info("message out of order, buffered for now");
                                 pendingOrders.add(order);
@@ -53,19 +53,19 @@ public class ParentDispatcherActor extends AbstractLoggingActor {
                             // maybe one of previously buffered messages can be forwarded now...
                             if (!pendingOrders.isEmpty() && pendingOrders.first().getOrderId() == currentOrderNumber) {
                                 Order order = pendingOrders.pollFirst();
-                                context().actorSelection(PATH + order.getProduct()).tell(order, self());
+                                context().actorSelection(order.getProduct()).tell(order, self());
                             } else if (!pendingModificationOrders.isEmpty() && pendingModificationOrders.first().getOrderId() == currentOrderNumber) {
                                 ModificationOrder modificationOrder = pendingModificationOrders.pollFirst();
-                                context().actorSelection(PATH + "*").tell(modificationOrder, self());
+                                context().actorSelection(ALL_CHILDREN).tell(modificationOrder, self());
                             } else if (!pendingCancellationOrders.isEmpty() && pendingCancellationOrders.first().getOrderId() == currentOrderNumber) {
                                 CancellationOrder cancellationOrder = pendingCancellationOrders.pollFirst();
-                                context().actorSelection(PATH + "*").tell(cancellationOrder, self());
+                                context().actorSelection(ALL_CHILDREN).tell(cancellationOrder, self());
                             }
                         }).
                         match(ModificationOrder.class, modOrder -> {
                             if (modOrder.getOrderId() == currentOrderNumber) {
                                 log().info("Sending modification order.." + modOrder);
-                                context().actorSelection(PATH + "*").tell(modOrder, self());
+                                context().actorSelection(ALL_CHILDREN).tell(modOrder, self());
                             } else {
                                 // out of order message, buffer for now
                                 pendingModificationOrders.add(modOrder);
@@ -75,7 +75,7 @@ public class ParentDispatcherActor extends AbstractLoggingActor {
                         match(CancellationOrder.class, cancellationOrder -> {
                             if (cancellationOrder.getOrderId() == currentOrderNumber) {
                                 log().info("Sending cancellation order.." + cancellationOrder);
-                                context().actorSelection(PATH + "*").tell(cancellationOrder, self());
+                                context().actorSelection(ALL_CHILDREN).tell(cancellationOrder, self());
                             } else {
                                 // out of order message, buffer for now
                                 pendingCancellationOrders.add(cancellationOrder);
@@ -96,7 +96,7 @@ public class ParentDispatcherActor extends AbstractLoggingActor {
                                 log().error("actor creation failed - there is already an actor with this path" + ex);
                             }
 
-                            context().actorSelection(PATH + order.getProduct()).tell(order, self());
+                            context().actorSelection(order.getProduct()).tell(order, self());
 
                         }).
                         match(Shutdown.class, s -> {
@@ -144,9 +144,9 @@ public class ParentDispatcherActor extends AbstractLoggingActor {
             Map.Entry<Integer, Object> entry = pendingMessagesInAscendingOrd.pollFirstEntry();
             if (entry.getValue() instanceof Order) {
                 Order order = (Order) entry.getValue();
-                context().actorSelection(PATH + order.getProduct()).tell(order, self());
+                context().actorSelection(order.getProduct()).tell(order, self());
             } else {
-                context().actorSelection(PATH + "*").tell(entry.getValue(), self());
+                context().actorSelection(ALL_CHILDREN).tell(entry.getValue(), self());
             }
         }
     }
@@ -156,7 +156,7 @@ public class ParentDispatcherActor extends AbstractLoggingActor {
         Set<Transaction> transactions = new HashSet<>();
 
         for (String product : products) {
-            Future<?> result = ask(context().system().actorSelection(PATH + product), UtilityMessages.SHUTDOWN, shutdownTimeoutInMs);
+            Future<?> result = ask(context().actorSelection(product), UtilityMessages.SHUTDOWN, shutdownTimeoutInMs);
             PartialResult r = (PartialResult) Await.result(result, Duration.Inf());
             log().info("PARTIAL RESULT:" + r);
             if (r.getOrderBook().isPresent()) {

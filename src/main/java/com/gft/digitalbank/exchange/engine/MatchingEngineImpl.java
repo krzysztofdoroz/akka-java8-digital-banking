@@ -110,13 +110,11 @@ public class MatchingEngineImpl implements MatchingEngine {
 
                     if (txAmount < buySide.getAmount()) {
                         // partial order
-                        buySideOrderBook.addOrder(new Order(buySide.getOrderId(), product, buySide.getSide(), buySide.getPrice(),
-                                buySide.getTimestamp(), buySide.getAmount() - txAmount, buySide.getBroker(), buySide.getClient()));
+                        addPartialOrder(buySideOrderBook, buySide, txAmount);
                     }
                     if (txAmount < sellSide.getAmount()) {
                         // partial order
-                        sellSideOrderBook.addOrder(new Order(sellSide.getOrderId(), product, sellSide.getSide(), sellSide.getPrice(),
-                                sellSide.getTimestamp(), sellSide.getAmount() - txAmount, sellSide.getBroker(), sellSide.getClient()));
+                        addPartialOrder(sellSideOrderBook, sellSide, txAmount);
                     }
 
                 } else {
@@ -126,6 +124,11 @@ public class MatchingEngineImpl implements MatchingEngine {
                 stillMatching = false;
             }
         }
+    }
+
+    private void addPartialOrder(OrderBookSide orderBookSide, Order oldOrder, int txAmount) {
+        orderBookSide.addOrder(new Order(oldOrder.getOrderId(),oldOrder.getProduct(), oldOrder.getSide(),
+                oldOrder.getPrice(), oldOrder.getTimestamp(), oldOrder.getAmount() - txAmount, oldOrder.getBroker(), oldOrder.getClient()));
     }
 
     private int findTxPrice(final Order buySideOrder, final Order sellSideOrder) {

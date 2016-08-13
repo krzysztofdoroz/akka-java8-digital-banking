@@ -2,8 +2,6 @@ package com.gft.digitalbank.exchange.solution;
 
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
-import com.fasterxml.jackson.core.JsonParseException;
-import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.gft.digitalbank.exchange.actors.messages.BooksAndTransactions;
 import com.gft.digitalbank.exchange.actors.messages.Shutdown;
@@ -21,7 +19,6 @@ import scala.concurrent.Future;
 import scala.concurrent.duration.Duration;
 
 import javax.jms.*;
-import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -39,15 +36,15 @@ public class JmsToAkkaMessageDispatcher implements MessageListener {
     public static final String CANCEL = "CANCEL";
     public static final String MODIFICATION = "MODIFICATION";
     public static final String SHUTDOWN_NOTIFICATION = "SHUTDOWN_NOTIFICATION";
-    private static final String PATH = "/user/parent-dispatcher";
+    public static final String MESSAGE_TYPE = "messageType";
     private static final int TIMEOUT_IN_MS = 15000;
 
-    private int total = 0;
     private final Session session;
     private final AtomicInteger activeBrokers;
     private final ProcessingListener processingListener;
     private final ActorSystem system;
     private final ActorRef parentDispatcher;
+    private int total = 0;
 
     public JmsToAkkaMessageDispatcher(final Session session, final AtomicInteger activeBrokers,
                                       final ProcessingListener processingListener, final ActorSystem system,
@@ -62,9 +59,8 @@ public class JmsToAkkaMessageDispatcher implements MessageListener {
     @Override
     public void onMessage(Message message) {
         try {
-
             String payload = ((TextMessage) message).getText();
-            String type = message.getStringProperty("messageType");
+            String type = message.getStringProperty(MESSAGE_TYPE);
 
             ObjectMapper mapper = new ObjectMapper();
 
@@ -121,22 +117,9 @@ public class JmsToAkkaMessageDispatcher implements MessageListener {
                 default:
                     LOG.warn("received unrecognized message type:" + type);
             }
-
-        } catch (JMSException e) {
-            LOG.error("JMS Exception:" + e);
-            throw new RuntimeException(e);
-        } catch (JsonMappingException e) {
-            LOG.error("JSON Mapping Exception:" + e);
-            throw new RuntimeException(e);
-        } catch (JsonParseException e) {
-            LOG.error("JSON Parsing Exception:" + e);
-            throw new RuntimeException(e);
-        } catch (IOException e) {
-            LOG.error("IO Exception:" + e);
-            throw new RuntimeException(e);
+            // don't rethrow any exceptions, just log them
         } catch (Exception e) {
-            LOG.error("Exception:" + e);
-            throw new RuntimeException(e);
+            LOG.error("Some issue with dispatching messages to actor system:" + e);
         }
     }
 }

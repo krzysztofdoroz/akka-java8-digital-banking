@@ -13,13 +13,10 @@ import java.util.*;
  */
 public class OrderBookSideImpl implements OrderBookSide {
 
-    private final Side side;
     private final Map<Pair<Integer, String>, Order> orderIdAndBrokerToOrder;
     private final NavigableSet<Order> orders;
 
     public OrderBookSideImpl(final Side side) {
-        this.side = side;
-
         if (side == Side.BUY){
             orders = new TreeSet<>(new BuySideComparator());
         }  else {
@@ -87,8 +84,10 @@ public class OrderBookSideImpl implements OrderBookSide {
 
     @Override
     public Order pollTopOrder() {
-        // TODO: orderIdAndBrokerToOrder should be in consistent state
-        return orders.pollFirst();
+        Order top = orders.pollFirst();
+        // keep orderIdAndBroker in sync
+        orderIdAndBrokerToOrder.remove(Pair.of(top.getOrderId(), top.getBroker()));
+        return top;
     }
 
     private class BuySideComparator implements Comparator<Order> {
