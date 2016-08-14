@@ -34,7 +34,6 @@ public class BrokersGateway {
     public static final String SHUTDOWN_TIMEOUT_PROP_NAME = "shutdown.timeout.in.ms";
     public static final String SHUTDOWN_TIMEOUT_IN_MS_DEFAULT = "shutdown.timeout.in.ms";
 
-    private final List<String> dests;
     private final ProcessingListener processingListener;
     private final AtomicInteger activeBrokers;
     private final ActorRef parentDispatcher;
@@ -44,7 +43,6 @@ public class BrokersGateway {
     private Properties properties = new Properties();
 
     public BrokersGateway(final List<String> dests, final ProcessingListener processingListener) throws NamingException, JMSException {
-        this.dests = dests;
         this.processingListener = processingListener;
         this.activeBrokers = new AtomicInteger(dests.size());
 

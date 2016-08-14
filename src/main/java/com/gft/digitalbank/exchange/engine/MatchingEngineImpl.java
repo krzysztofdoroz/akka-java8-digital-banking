@@ -4,6 +4,8 @@ import com.gft.digitalbank.exchange.domain.*;
 import com.gft.digitalbank.exchange.model.OrderBook;
 import com.gft.digitalbank.exchange.model.OrderEntry;
 import com.gft.digitalbank.exchange.model.Transaction;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.*;
 
@@ -11,6 +13,8 @@ import java.util.*;
  * Created by krzysztof on 23/07/16.
  */
 public class MatchingEngineImpl implements MatchingEngine {
+
+    private final static Logger LOG = LoggerFactory.getLogger(MatchingEngineImpl.class);
 
     private final String product;
     private final OrderBookSide buySideOrderBook;
@@ -45,6 +49,8 @@ public class MatchingEngineImpl implements MatchingEngine {
             case SELL:
                 sellSideOrderBook.addOrder(order);
                 break;
+            default:
+                LOG.error("Unrecognized size:" + order.getSide());
         }
         tryMatching();
     }
@@ -108,21 +114,24 @@ public class MatchingEngineImpl implements MatchingEngine {
                             buySide.getBroker(), sellSide.getBroker(), buySide.getClient(), sellSide.getClient());
                     transactionRegister.register(tx);
 
-                    if (txAmount < buySide.getAmount()) {
-                        // partial order
-                        addPartialOrder(buySideOrderBook, buySide, txAmount);
-                    }
-                    if (txAmount < sellSide.getAmount()) {
-                        // partial order
-                        addPartialOrder(sellSideOrderBook, sellSide, txAmount);
-                    }
-
+                    addPartialOrders(buySide, sellSide, txAmount);
                 } else {
                     stillMatching = false;
                 }
             } else {
                 stillMatching = false;
             }
+        }
+    }
+
+    private void addPartialOrders(Order buySide, Order sellSide, int txAmount) {
+        if (txAmount < buySide.getAmount()) {
+            // partial order
+            addPartialOrder(buySideOrderBook, buySide, txAmount);
+        }
+        if (txAmount < sellSide.getAmount()) {
+            // partial order
+            addPartialOrder(sellSideOrderBook, sellSide, txAmount);
         }
     }
 
