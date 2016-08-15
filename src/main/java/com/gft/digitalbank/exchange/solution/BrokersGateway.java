@@ -66,8 +66,8 @@ public class BrokersGateway {
 
         for (String queue : dests) {
 
-            Session session = connection.createSession(false,
-                    Session.AUTO_ACKNOWLEDGE);
+            Session session = connection.createSession(true,
+                    Session.SESSION_TRANSACTED);
 
             Destination destination = session.createQueue(queue);
 

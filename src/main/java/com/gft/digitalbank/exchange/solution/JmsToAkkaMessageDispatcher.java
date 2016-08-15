@@ -44,6 +44,7 @@ public class JmsToAkkaMessageDispatcher implements MessageListener {
     private final ProcessingListener processingListener;
     private final ActorSystem system;
     private final ActorRef parentDispatcher;
+    private final ObjectMapper mapper = new ObjectMapper();
     private int total = 0;
 
     public JmsToAkkaMessageDispatcher(final Session session, final AtomicInteger activeBrokers,
@@ -62,31 +63,28 @@ public class JmsToAkkaMessageDispatcher implements MessageListener {
             String payload = ((TextMessage) message).getText();
             String type = message.getStringProperty(MESSAGE_TYPE);
 
-            ObjectMapper mapper = new ObjectMapper();
-
             switch (type) {
                 case ORDER:
                     Order order = mapper.readValue(payload, Order.class);
                     parentDispatcher.tell(order, ActorRef.noSender());
-
                     total++;
                     break;
                 case CANCEL:
                     CancellationOrder cancellationOrder = mapper.readValue(payload, CancellationOrder.class);
                     LOG.info("received cancellation message:" + cancellationOrder);
                     parentDispatcher.tell(cancellationOrder, ActorRef.noSender());
-
                     total++;
                     break;
                 case MODIFICATION:
                     ModificationOrder modificationOrder = mapper.readValue(payload, ModificationOrder.class);
-                    LOG.info("modification:" + modificationOrder);
+                    LOG.info("received modification message:" + modificationOrder);
                     parentDispatcher.tell(modificationOrder, ActorRef.noSender());
-
                     total++;
                     break;
                 case SHUTDOWN_NOTIFICATION:
                     LOG.debug("close JMS session...");
+
+                    session.commit();
                     session.close();
 
                     if (activeBrokers.decrementAndGet() == 0) {
@@ -117,6 +115,10 @@ public class JmsToAkkaMessageDispatcher implements MessageListener {
                 default:
                     LOG.warn("received unrecognized message type:" + type);
             }
+
+            // now we can commit
+            session.commit();
+
             // don't rethrow any exceptions, just log them
         } catch (Exception e) {
             LOG.error("Some issue with dispatching messages to actor system:" + e);
